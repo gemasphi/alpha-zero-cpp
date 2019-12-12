@@ -4,7 +4,6 @@ import torch
 import pickle
 
 #TODO add asserts
-
 class MCTS(object):
 	def __init__(self, **params):
 		super(MCTS, self).__init__()

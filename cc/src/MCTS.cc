@@ -1,9 +1,12 @@
+#ifndef MCTS_CC_
+#define MCTS_CC_
+
 #include <iostream>
 #include <map>
-#include <Tictactoe.h>
 #include "NNWrapper.h"
-#include "games/eigen/Eigen/Dense"
-#include "games/eigen/Eigen/Core"
+#include <Game.h>
+#include "eigen/Eigen/Dense"
+#include "eigen/Eigen/Core"
 #include <memory>
 #include <torch/script.h>
 #include <limits>       
@@ -12,7 +15,7 @@ using namespace Eigen;
 class GameState : public std::enable_shared_from_this<GameState>
 {
 	private:
-		std::shared_ptr<TicTacToe> game;
+		std::shared_ptr<Game> game;
 		int action;
 		bool isExpanded;
 
@@ -24,7 +27,7 @@ class GameState : public std::enable_shared_from_this<GameState>
 		ArrayXf childP;
 		ArrayXf childN;
 
-		GameState(std::shared_ptr<TicTacToe> game, int action, std::shared_ptr<GameState> parent){
+		GameState(std::shared_ptr<Game> game, int action, std::shared_ptr<GameState> parent){
 			this->isExpanded = false;;
 			this->parent = parent;
 			this->game = game;
@@ -96,7 +99,8 @@ class GameState : public std::enable_shared_from_this<GameState>
 
 		std::shared_ptr<GameState> play(int action){
 			if (this->children.find(action) == this->children.end()){
-				std::shared_ptr<TicTacToe> t = std::make_shared<TicTacToe>(*game);
+				std::unique_ptr<Game> t_unique = this->game->copy();
+				std::shared_ptr<Game> t = std::move(t_unique);
 				t->play(action);
 
 				this->children[action] = std::make_shared<GameState>(t, action, shared_from_this()); 
@@ -168,12 +172,12 @@ class GameState : public std::enable_shared_from_this<GameState>
 		}
 
 		ArrayXf getSearchPolicy(float temp){
-			std::cout << "W" << std::endl;
+			/*std::cout << "W" << std::endl;
 			std::cout << childW << std::endl;
 			std::cout << "N" << std::endl;
 			std::cout << childN << std::endl;
 			std::cout << "P" << std::endl;
-			std::cout << childP << std::endl;
+			std::cout << childP << std::endl;*/
 			ArrayXf count = pow(this->childN,1/temp);
 			return count/count.sum();
 		}
@@ -200,16 +204,14 @@ class MCTS
 	private:
 		float cpuct;
 		float dirichlet_alpha;
-		int n_simulations;
 
 	public:
-		MCTS(int cpuct, int dirichlet_alpha, int n_simulations){
+		MCTS(int cpuct, int dirichlet_alpha){
 			this->cpuct = cpuct;
 			this->dirichlet_alpha = dirichlet_alpha;
-			this->n_simulations = n_simulations;
 		}
 
-		ArrayXf simulate(std::shared_ptr<GameState> root, NNWrapper& model, float temp){
+		ArrayXf simulate(std::shared_ptr<GameState> root, NNWrapper& model, float temp = 1, int n_simulations = 5){
 			std::shared_ptr<GameState> leaf; 
 
 			for (int i = 0; i < n_simulations; i++){
@@ -221,7 +223,7 @@ class MCTS
 					continue;
 				}
 
-				NN::Output res = model.predict(leaf->canonicalBoard());
+				NN::Output res = model.predict({leaf->canonicalBoard()});
 				leaf->expand(res.policy);
 				leaf->backup(res.value);
 				//std::cout << "end sim: " << i << std::endl;
@@ -230,13 +232,34 @@ class MCTS
 			return root->getSearchPolicy(temp);
 
 		}
-};
+		/*
+		ArrayXf threaded_simulate(std::shared_ptr<GameState> root, NNWrapper& model, float temp = 1, int n_simulations = 5){
+			int n_threads = 3;
+			int simulations_to_run = n_simulations / n_threads; 
+			std::vector<GameState> leafs;
+			//we do more than the n_simulations currently
+			for(int i = 0; i < simulations_to_run + 1; i++){
 
+				if (leafs.size == 0){
+					break
+				}
+				std::vector<NN::Output> = model.predict(leafs); 
+
+			}
+
+			return root->getSearchPolicy(temp);
+		}*/
+
+
+
+};
+/*
 int main(){
 	std::shared_ptr<TicTacToe> t = std::make_shared<TicTacToe>(3,1);
-	NNWrapper model = NNWrapper("../../traced_model.pt");
 	
-	MCTS m = MCTS(3, 0.3, 5);
+	NNWrapper model = NNWrapper("../traced_model.pt");
+	
+	MCTS m = MCTS(3, 0.3);
 
 	int action;
 
@@ -261,6 +284,7 @@ int main(){
 		t->printBoard();
 	//	root = root->getChildGameState(action);
 	}
-
 };
 
+*/
+#endif 

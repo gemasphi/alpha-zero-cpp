@@ -1,8 +1,8 @@
 #include <iostream>
 #include "utils.h"
 #include "NNWrapper.h"
-#include "games/eigen/Eigen/Dense"
-#include "games/eigen/Eigen/Core"
+#include "eigen/Eigen/Dense"
+#include "eigen/Eigen/Core"
 #include <torch/script.h>
        
 using namespace Eigen;
@@ -16,12 +16,26 @@ NNWrapper::NNWrapper(std::string filename){
 	}
 }
 
+void NNWrapper::reload(std::string filename){
+	torch::jit::script::Module previous_module = this->module;
+	try {
+		this->module = torch::jit::load(filename);
+	}
+	catch (const c10::Error& e) {
+		std::cerr << "error reloading the model, using old model\n";
+		this->module = previous_module;
+	}
+}
 
-NN::Output NNWrapper::predict(MatrixXf board){
-	auto torch_board = utils::eigen2libtorch(board);
 
+NN::Output NNWrapper::predict(std::vector<MatrixXf> boards){
 	std::vector<torch::jit::IValue> inputs;
-	inputs.push_back(torch_board);
+
+	/*TODO: THIS NOT HOW YOU DO BATCHING*/
+	for (auto &board : boards){
+		auto torch_board = utils::eigen2libtorch(board);
+		inputs.push_back(torch_board);
+	}
 	
 	auto output = this->module.forward(inputs).toTuple()->elements();
 	

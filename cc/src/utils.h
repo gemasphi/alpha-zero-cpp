@@ -1,5 +1,5 @@
-#include "games/eigen/Eigen/Dense"
-#include "games/eigen/Eigen/Core"
+#include "eigen/Eigen/Dense"
+#include "eigen/Eigen/Core"
 #include <torch/script.h>
 
 using namespace Eigen;

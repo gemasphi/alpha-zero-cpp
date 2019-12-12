@@ -1,9 +1,10 @@
 #include <Tictactoe.h>
 #include <iostream>
-#include "eigen/Eigen/Dense"
-#include "eigen/Eigen/Core"
+#include "../eigen/Eigen/Dense"
+#include "../eigen/Eigen/Core"
 #include <stdexcept>
 #include <sstream>
+#include <memory>
 
 using namespace Eigen;
 
@@ -13,9 +14,8 @@ TicTacToe::TicTacToe(int boardSize, float player){
 	this->player = 1;
 }
 
-TicTacToe::TicTacToe(TicTacToe& t){
-	this->board = t.getBoard();
-	this->boardSize = t.getBoardSize();
+std::unique_ptr<Game> TicTacToe::copy(){
+	return std::make_unique<TicTacToe>(*this);
 }
 
 void TicTacToe::printBoard(){
@@ -59,6 +59,9 @@ int TicTacToe::getWinner(){
 	return this->winner;
 }
 
+int TicTacToe::getCanonicalWinner(){
+	return this->winner*this->player;
+}
 bool TicTacToe::findWin(Matrix<bool,Dynamic,Dynamic> playerPositions){
 	for (int i = 0; i < this->boardSize - this->inRow + 1; i++){
 		for (int j = 0; j < this->boardSize - this->inRow + 1; j++){

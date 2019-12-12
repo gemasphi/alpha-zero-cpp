@@ -2,12 +2,13 @@
 #define TICTACTOE_H_
 
 #include <iostream>
-#include "eigen/Eigen/Dense"
-#include "eigen/Eigen/Core"
+#include "Game.h"
+#include "../eigen/Eigen/Dense"
+#include "../eigen/Eigen/Core"
 
 using namespace Eigen;
 
-class TicTacToe
+class TicTacToe : public Game
 {
 	private:
 		int boardSize = 3; 
@@ -18,7 +19,7 @@ class TicTacToe
 
 	public:
 		TicTacToe(int boardSize, float player);
-		TicTacToe(TicTacToe& t);
+		std::unique_ptr<Game> copy();
 		void printBoard();
 		void play(int action);
 		bool ended();
@@ -30,6 +31,7 @@ class TicTacToe
 		int getActionSize();
 		ArrayXf getPossibleActions();
 		MatrixXf getBoard();
+		int getCanonicalWinner();
 };
 
 #endif 

@@ -11,29 +11,29 @@ class NetWrapper(object):
         super(NetWrapper, self).__init__()
         self.nn = AlphaZeroNet(game, params['n_res_layers'])
 
-    def train(self, data, batch_size = 16, loss_display = 5, training_steps = 150, lr = 0.1 , wd = 0.005):
+    def train(self, data, batch_size = 16, loss_display = 5, training_steps = 150, lr = 0.01 , wd = 0.015):
         self.nn.train()
         self.optimizer = optim.Adam(self.nn.parameters(), lr = lr, weight_decay = wd)
 
         total_loss = 0.0
-        running_loss = 0
+#        running_loss = 0
 
-        for i in range(training_steps): 
-            board, policy, value = data.sample_batch(batch_size)
-            self.optimizer.zero_grad()
-            v, p = self.nn(torch.Tensor(board))
-            loss = self.nn.loss((v, p), (torch.Tensor(value), torch.Tensor(policy)))
-            loss.backward()
-            self.optimizer.step()
-            running_loss += loss.item()
-            total_loss += loss.item()
-            
-            if i!= 0 and i % loss_display == 0:    
-                print('[%d, %5d] loss: %.3f' %
-                      (1, i + 1, running_loss / loss_display))
-                running_loss = 0.0
+        #for i in range(training_steps): 
+        board, policy, value = data
+        self.optimizer.zero_grad()
+        v, p = self.nn(torch.Tensor(board))
+        loss = self.nn.loss((v, p), (torch.Tensor(value), torch.Tensor(policy)))
+        loss.backward()
+        self.optimizer.step()
+#        running_loss += loss.item()
+        total_loss += loss.item()
+        
+ #       if i!= 0 and i % loss_display == 0:    
+ #           print('[%d, %5d] loss: %.3f' %
+ #                 (1, i + 1, running_loss / loss_display))
+ #           running_loss = 0.0
 
-        return total_loss/training_steps
+        return total_loss
     
     def predict(self, board):
         self.nn.eval()
@@ -44,7 +44,7 @@ class NetWrapper(object):
         p = p.detach().numpy()
         return v, p
 
-    def save_model(self, folder = "models", model_name = "fdsmodel.pt"):
+    def save_model(self, folder = "models", model_name = "model.pt"):
         if not os.path.isdir(folder):
             os.mkdir(folder)
 
@@ -52,6 +52,15 @@ class NetWrapper(object):
             'model_state_dict': self.nn.state_dict(),
             'optimizer_state_dict': self.optimizer.state_dict(),
             }, "{}/{}".format(folder, model_name))
+
+    def save_traced_model(self, folder = "models", model_name = "model.pt"):
+        if not os.path.isdir(folder):
+            os.mkdir(folder)
+
+        self.nn.eval()
+        traced_model = torch.jit.script(self.nn)
+        traced_model.save("{}/{}".format(folder, model_name))
+        
 
     def load_model(self, path = "models/fdsmodel.pt", load_optim = False):
         cp = torch.load(path)
@@ -176,10 +185,5 @@ class ValueHead(nn.Module):
         v = F.relu(self.fc1(v))
         v = torch.tanh(self.fc2(v))
         
-        return v
-
-def trace_model(game):
-    model = AlphaZeroNet(game, 5)
-    traced_model = torch.jit.script(model)
-    traced_model.save("traced_model.pt")
+        return v   
 

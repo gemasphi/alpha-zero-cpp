@@ -1,0 +1,4 @@
+/home/az/alpha-zero-torch/cc/build/CMakeFiles/edit_cache.dir
+/home/az/alpha-zero-torch/cc/build/CMakeFiles/play_agaisnt.dir
+/home/az/alpha-zero-torch/cc/build/CMakeFiles/rebuild_cache.dir
+/home/az/alpha-zero-torch/cc/build/CMakeFiles/selfplay.dir
