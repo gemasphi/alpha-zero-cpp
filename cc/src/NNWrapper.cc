@@ -29,13 +29,16 @@ void NNWrapper::reload(std::string filename){
 
 
 NN::Output NNWrapper::predict(std::vector<MatrixXf> boards){
-	std::vector<torch::jit::IValue> inputs;
-
-	/*TODO: THIS NOT HOW YOU DO BATCHING*/
+	//Convert boards to tensors
+	std::vector<torch::Tensor> inputs_vec;
 	for (auto &board : boards){
 		auto torch_board = utils::eigen2libtorch(board);
-		inputs.push_back(torch_board);
+		inputs_vec.push_back(torch_board);
 	}
+	at::Tensor input_ = torch::cat(inputs_vec);
+
+	std::vector<torch::jit::IValue> inputs;
+	inputs.push_back(input_ );
 	
 	auto output = this->module.forward(inputs).toTuple()->elements();
 	

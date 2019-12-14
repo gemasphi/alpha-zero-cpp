@@ -7,10 +7,12 @@
 #include <Game.h>
 #include "eigen/Eigen/Dense"
 #include "eigen/Eigen/Core"
+#include "utils.h"
 #include <memory>
 #include <torch/script.h>
 #include <limits>       
 using namespace Eigen;
+
 
 class GameState : public std::enable_shared_from_this<GameState>
 {
@@ -152,10 +154,46 @@ class GameState : public std::enable_shared_from_this<GameState>
 					   );
 		}
 
-		void expand(ArrayXf p){
+		ArrayXf dirichlet_distribution(ArrayXf alpha){
+			ArrayXf res =  ArrayXf::Zero(alpha.size());
+			std::random_device rd;
+			std::mt19937 gen(rd());
+
+			for(int i; i < alpha.size(); i++){
+				std::gamma_distribution<double> dist(alpha(i),1);
+				auto sample = dist(gen); 
+				res(i) = sample;
+			}
+
+				std::cout<<"end for"<<std::endl;
+				std::cout<<res<<std::endl;
+			
+			if (res.sum() == 0){
+				return res; //TODO: hacky 
+			} else {
+				return res/res.sum();
+			}	
+		} 
+
+
+		void expand(ArrayXf p, float dirichlet_alpha){
 			this->isExpanded = true;
 			ArrayXf poss = this->game->getPossibleActions();
+			
+			if (!this->parent->parent){
+				std::cout<< "beepis" <<std::endl;
+				ArrayXf alpha = ArrayXf::Ones(p.size())*dirichlet_alpha;
+				std::cout<< "alpha" << alpha << std::endl;
+				std::cout<< "d_alpha" << dirichlet_alpha << std::endl;
+				ArrayXf d = dirichlet_distribution(alpha);
+				std::cout<< d <<std::endl;
+				std::cout<< 0.75*p <<std::endl;
+				p = 0.75*p + 0.25*d;
+			}
+			
+
 			this->childP = this->getValidActions(p, poss);
+
 			//std::cout << "p inside " << p << std::endl;
 			//std::cout << "poss " << poss << std::endl;
 			//std::cout << "childp" << this->childP << std::endl;
@@ -206,9 +244,11 @@ class MCTS
 		float dirichlet_alpha;
 
 	public:
-		MCTS(int cpuct, int dirichlet_alpha){
+		MCTS(float cpuct, float dirichlet_alpha){
 			this->cpuct = cpuct;
 			this->dirichlet_alpha = dirichlet_alpha;
+			std::cout<< "DDDDD" << dirichlet_alpha << std::endl;
+
 		}
 
 		ArrayXf simulate(std::shared_ptr<GameState> root, NNWrapper& model, float temp = 1, int n_simulations = 5){
@@ -224,7 +264,7 @@ class MCTS
 				}
 
 				NN::Output res = model.predict({leaf->canonicalBoard()});
-				leaf->expand(res.policy);
+				leaf->expand(res.policy, dirichlet_alpha);
 				leaf->backup(res.value);
 				//std::cout << "end sim: " << i << std::endl;
 			}

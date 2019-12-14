@@ -39,4 +39,3 @@ int main(){
 	play_game(t, p1, p2, true);
 	return 0;
 }
-

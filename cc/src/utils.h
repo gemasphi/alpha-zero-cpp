@@ -1,6 +1,7 @@
 #include "eigen/Eigen/Dense"
 #include "eigen/Eigen/Core"
 #include <torch/script.h>
+#include <random>
 
 using namespace Eigen;
 

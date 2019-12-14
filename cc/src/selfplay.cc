@@ -52,11 +52,8 @@ void play_game(std::shared_ptr<Game> n_game, MCTS mcts, NNWrapper model, bool pr
     	action = dist(gen);
     	game->play(action);
 
-
     	std::vector<float> p_v(p.data(), p.data() + p.size());
     	probabilities.push_back(p_v);
-
-    
     	
     	if (print){
 			game->printBoard();
