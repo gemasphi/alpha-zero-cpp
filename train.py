@@ -9,18 +9,18 @@ import json
 import os
 import numpy as np
 import torch.optim as optim
+#import subprocess
 
-#{'lr': 0.012486799182525229, 'wd': 0.015010724465999522}.
+GAME_DIR = "games/"
+SAVE_CHECKPOINT = 10000000000
+LOSS_LOG = 20
+BATCH_SIZE = 64
+GAME_WINDOW = 35
 
-GAME_DIR = "cc/build/games/"
-SAVE_CHECKPOINT = 100
-LOSS_LOG = 10
-BATCH_SIZE = 36
-GAME_WINDOW = 50
 
 def make_input(history, i):
 	player = -1 if i % 2 == 0 else 1 
-	return player*np.reshape(history[i], (3,3))       
+	return player*np.array(history[i])       
 
 def make_target(winner, probs, i):
 	player = -1 if i % 2 == 0 else 1  
@@ -33,6 +33,7 @@ def sample_batch(batch_size):
 		)[:GAME_WINDOW]
 
 	game_files = np.random.choice(all_games, size = batch_size)
+	#print(game_files)
 	games = [json.load(open(GAME_DIR + game_f)) for game_f in game_files]
 	game_pos = [(g, np.random.randint(len(g['history']))) for g in games]
 	pos = np.array([
@@ -41,39 +42,28 @@ def sample_batch(batch_size):
 		])
 
 	return list(pos[:,0]), list(pos[:,1]), list(pos[:,2])
+ 
+def train_az(nn, folder, n_iter = -1, n_epochs = -1):
+	nn.load_traced_model("models/traced_model_new.pt")
+	i = 0
+	loss = 0
+	while True:
+		batch = sample_batch(BATCH_SIZE)
+		loss += nn.train(batch)
+		if i % SAVE_CHECKPOINT == 0 and i != 0:
+			print("New model saved")
+			nn.save_traced_model(folder = folder, model_name = "traced_model_new.pt")
 
-with open("config.yaml", 'r') as f:
-    config = yaml.safe_load(f)
+		if i % LOSS_LOG == 0 and i != 0:
+			print(loss/LOSS_LOG)
+			loss = 0
 
-game = Tictactoe(**config['GAME'])
-#trace_model(game)
+		i += 1
 
-nn = NetWrapper(game, **config['NN'])
+		if n_epochs > 0 and i > n_epochs:
+			nn.save_traced_model(folder = "models", model_name = "traced_model_new.pt")
+			#nn.save_model(folder = "models", model_name = "model_new.pt")
+			nn.save_traced_model(folder = "models", model_name = "{}_traced_model_new.pt".format(n_iter))
 
+			break
 
-i = 0
-loss = 0
-while True:
-	#print(batch)
-	#print(batch)
-	batch = sample_batch(BATCH_SIZE)
-	loss += nn.train(batch)
-	if i % SAVE_CHECKPOINT == 0 and i != 0:
-		print("New model saved")
-		nn.save_traced_model(folder = "cc", model_name = "traced_model.pt")
-
-	if i % LOSS_LOG == 0 and i != 0:
-		print(loss/LOSS_LOG)
-		loss = 0
-
-	i += 1
-
-
-"""
-
-mcts = MCTS(**config['MCTS'])
-#nn.load_model()
-
-alphat = az(nn, game, mcts, **config['AZ'])
-loss = alphat.train(lr = 0.01, wd = 0.015)
-"""

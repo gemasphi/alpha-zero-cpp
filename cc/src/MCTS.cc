@@ -117,6 +117,7 @@ class GameState : public std::enable_shared_from_this<GameState>
 				current->incN();
 				current->updateW(v);
 				current = current->getParent();
+				v *= -1;
 			}
 		}
 
@@ -125,7 +126,7 @@ class GameState : public std::enable_shared_from_this<GameState>
 		}
 
 		void updateW(float v){
-			this->parent->childW[this->action] -= v;
+			this->parent->childW[this->action] += v;
 		}
 
 		void incN(){
@@ -164,9 +165,6 @@ class GameState : public std::enable_shared_from_this<GameState>
 				auto sample = dist(gen); 
 				res(i) = sample;
 			}
-
-				std::cout<<"end for"<<std::endl;
-				std::cout<<res<<std::endl;
 			
 			if (res.sum() == 0){
 				return res; //TODO: hacky 
@@ -181,13 +179,8 @@ class GameState : public std::enable_shared_from_this<GameState>
 			ArrayXf poss = this->game->getPossibleActions();
 			
 			if (!this->parent->parent){
-				std::cout<< "beepis" <<std::endl;
 				ArrayXf alpha = ArrayXf::Ones(p.size())*dirichlet_alpha;
-				std::cout<< "alpha" << alpha << std::endl;
-				std::cout<< "d_alpha" << dirichlet_alpha << std::endl;
 				ArrayXf d = dirichlet_distribution(alpha);
-				std::cout<< d <<std::endl;
-				std::cout<< 0.75*p <<std::endl;
 				p = 0.75*p + 0.25*d;
 			}
 			
@@ -217,6 +210,9 @@ class GameState : public std::enable_shared_from_this<GameState>
 			std::cout << "P" << std::endl;
 			std::cout << childP << std::endl;*/
 			ArrayXf count = pow(this->childN,1/temp);
+			//std::cout << "childN " << this->childN << std::endl;
+			//std::cout << "count " << count << std::endl;
+			//std::cout << "count.sum " << count.sum()<< std::endl;
 			return count/count.sum();
 		}
 
@@ -247,11 +243,9 @@ class MCTS
 		MCTS(float cpuct, float dirichlet_alpha){
 			this->cpuct = cpuct;
 			this->dirichlet_alpha = dirichlet_alpha;
-			std::cout<< "DDDDD" << dirichlet_alpha << std::endl;
-
 		}
 
-		ArrayXf simulate(std::shared_ptr<GameState> root, NNWrapper& model, float temp = 1, int n_simulations = 5){
+		ArrayXf simulate(std::shared_ptr<GameState> root, NNWrapper& model, float temp = 1, int n_simulations = 25){
 			std::shared_ptr<GameState> leaf; 
 
 			for (int i = 0; i < n_simulations; i++){
@@ -293,38 +287,5 @@ class MCTS
 
 
 };
-/*
-int main(){
-	std::shared_ptr<TicTacToe> t = std::make_shared<TicTacToe>(3,1);
-	
-	NNWrapper model = NNWrapper("../traced_model.pt");
-	
-	MCTS m = MCTS(3, 0.3);
 
-	int action;
-
-	
-	std::shared_ptr<GameState> fakeparentparent;
-	std::shared_ptr<GameState> fakeparent = std::make_shared<GameState>(t, 0, fakeparentparent);
-	while (not t->ended()){
-		std::shared_ptr<GameState> root = std::make_shared<GameState>(t, 0, fakeparent);
-		std::cout << root->childN << std::endl;
-		std::cout << root->childP << std::endl;
-		std::cout << root->childW << std::endl;
-		ArrayXf p = m.simulate(root, model, 1);
-		p.maxCoeff(&action);
-	//	root = root->getChildGameState(action);
-		std::cout << "action probs" << p  << std::endl; 
-		std::cout << "mtcs picked " << action  << std::endl; 
-		t->play(action);
-		t->printBoard();
-		std::cout << "pick an action "; 
-		std::cin >>  action;
-		t->play(action);
-		t->printBoard();
-	//	root = root->getChildGameState(action);
-	}
-};
-
-*/
 #endif 

@@ -5,11 +5,17 @@ import torch.nn.functional as F
 import torch.optim as optim
 import os
 import numpy as np
+from typing import Tuple
 
 class NetWrapper(object):
-    def __init__(self, game, **params):
+    def __init__(self, input_planes, board_dim, action_size, output_planes, res_layer_number):
         super(NetWrapper, self).__init__()
-        self.nn = AlphaZeroNet(game, params['n_res_layers'])
+        self.nn = AlphaZeroNet(input_planes = input_planes, 
+                              board_dim = board_dim, 
+                              action_size = action_size, 
+                              output_planes = output_planes, 
+                              res_layer_number = res_layer_number
+                              )
 
     def train(self, data, batch_size = 16, loss_display = 5, training_steps = 150, lr = 0.01 , wd = 0.015):
         self.nn.train()
@@ -20,6 +26,7 @@ class NetWrapper(object):
 
         #for i in range(training_steps): 
         board, policy, value = data
+
         self.optimizer.zero_grad()
         v, p = self.nn(torch.Tensor(board))
         loss = self.nn.loss((v, p), (torch.Tensor(value), torch.Tensor(policy)))
@@ -60,27 +67,32 @@ class NetWrapper(object):
         self.nn.eval()
         traced_model = torch.jit.script(self.nn)
         traced_model.save("{}/{}".format(folder, model_name))
-        
+        return traced_model
 
     def load_model(self, path = "models/fdsmodel.pt", load_optim = False):
         cp = torch.load(path)
+
         self.nn.load_state_dict(cp['model_state_dict'])
         if load_optim:   
             self.optimizer = optim.Adam(self.nn.parameters(), lr = 0.1, weight_decay = 0.005)
             self.optimizer.load_state_dict(cp['optimizer_state_dict'])
-        return self.nn
         
+        print("Netwrapper: model loaded")
+
+        return self.nn
+    
+    def load_traced_model(self, path = "models/traced_model_new.pt"):
+        self.nn = torch.jit.load(path)
+        print("Netwrapper: Traced model loaded")
+        return self.nn
+
 class AlphaZeroNet(nn.Module):
-    def __init__(self, game, res_layer_number = 5):
+    def __init__(self, input_planes, board_dim, action_size, output_planes, res_layer_number):
         super(AlphaZeroNet, self).__init__()
-
-        input_planes = game.get_input_planes()
-        board_dim = game.get_board_dimensions()
-
         self.conv = ConvLayer(board_dim = board_dim, inplanes = input_planes)
         self.res_layers = torch.nn.ModuleList([ResLayer() for i in range(res_layer_number)])
         self.valueHead = ValueHead(board_dim = board_dim)
-        self.policyHead = PolicyHead(board_dim = board_dim, action_size = game.get_action_size(), output_planes = game.get_output_planes())
+        self.policyHead = PolicyHead(board_dim = board_dim, action_size = action_size, output_planes = output_planes)
 
     def forward(self,s):
         s = self.conv(s)
@@ -92,8 +104,9 @@ class AlphaZeroNet(nn.Module):
         p = self.policyHead(s)
 
         return v, p
-
-    def loss(self, predicted, label):
+    
+    @torch.jit.export
+    def loss(self, predicted : Tuple[torch.Tensor, torch.Tensor], label: Tuple[torch.Tensor, torch.Tensor]):
         (v, p) = predicted
         (z, pi) = label
 
@@ -103,10 +116,11 @@ class AlphaZeroNet(nn.Module):
         return (value_error - policy_error).mean() #no need to add the l2 regularization term as it is done in the optimizer
 
 class ConvLayer(nn.Module):
-    def __init__(self, board_dim = (), inplanes = 1, planes=128, stride=1):
+    def __init__(self, board_dim = (), inplanes = 1, planes=256, stride=1):
         super(ConvLayer, self).__init__()
         self.inplanes = inplanes
         self.board_dim = board_dim
+        print(board_dim)
         self.conv = nn.Conv2d(inplanes, planes, kernel_size=3, stride=stride,
                      padding=1, bias=False)
         self.bn = nn.BatchNorm2d(planes)
@@ -118,7 +132,7 @@ class ConvLayer(nn.Module):
         return s
 
 class ResLayer(nn.Module):
-    def __init__(self, inplanes=128, planes=128, stride=1):
+    def __init__(self, inplanes=256, planes=256, stride=1):
         super(ResLayer, self).__init__()
         self.conv1 = nn.Conv2d(inplanes, planes, kernel_size=3, stride=stride,
                      padding=1, bias=False)
@@ -146,7 +160,7 @@ class PolicyHead(nn.Module):
         self.action_size = action_size
         self.output_planes = output_planes
 
-        self.conv1 = nn.Conv2d(128, 32, kernel_size=1) # policy head
+        self.conv1 = nn.Conv2d(256, 32, kernel_size=1) # policy head
         self.bn1 = nn.BatchNorm2d(32)
         
         self.logsoftmax = nn.LogSoftmax(dim=1)
@@ -174,7 +188,7 @@ class ValueHead(nn.Module):
     def __init__(self, board_dim = (3,3)):
         super(ValueHead, self).__init__()
         self.board_dim = board_dim
-        self.conv = nn.Conv2d(128, 1, kernel_size=1) # value head
+        self.conv = nn.Conv2d(256, 1, kernel_size=1) # value head
         self.bn = nn.BatchNorm2d(1)
         self.fc1 = nn.Linear(self.board_dim[0]*self.board_dim[1], 32) 
         self.fc2 = nn.Linear(32, 1)

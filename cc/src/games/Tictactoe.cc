@@ -18,6 +18,22 @@ std::unique_ptr<Game> TicTacToe::copy(){
 	return std::make_unique<TicTacToe>(*this);
 }
 
+int TicTacToe::getActionSize(){
+	return this->boardSize*this->boardSize;
+}
+
+std::vector<int> TicTacToe::getBoardSize(){
+	return {this->boardSize, this->boardSize};
+}
+
+int TicTacToe::getInputPlanes(){
+	return 1;
+}
+
+int TicTacToe::getOutputPlanes(){
+	return 1;
+}
+
 void TicTacToe::printBoard(){
 	std::cout<< this->board << std::endl;
 }
@@ -43,15 +59,14 @@ bool TicTacToe::ended(){
 		if (this->findWin(playerPositions)){
 			this->winner = p * this->player;
 			return true;
-		};
-						
-
-		if((this->board.array() == 0).count() == 0){
-			this->winner = 0;
-			return true;
-		}								
+		};						
 	}
 
+	if((this->board.array() == 0).count() == 0){
+		this->winner = 0;
+		return true;
+	}	
+	
 	return false;
 }
 
@@ -82,14 +97,6 @@ bool TicTacToe::isWin(Matrix<bool,Dynamic,Dynamic> smallBoard){
 
 	return vertical.any() or horizontal.any() or ldiagonal or rdiagonal;
 }	
-
-int TicTacToe::getActionSize(){
-	return this->boardSize*this->boardSize;
-}
-
-int TicTacToe::getBoardSize(){
-	return this->boardSize;
-}
 
 MatrixXf TicTacToe::getBoard(){
 	return this->board;

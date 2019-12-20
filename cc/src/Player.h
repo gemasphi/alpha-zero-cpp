@@ -12,7 +12,8 @@ class Player
 {
 	public:
 		virtual int getAction(std::shared_ptr<Game> game) = 0;
-		
+		static std::unique_ptr<Player> create(std::string type);
+
 };
 
 
@@ -22,7 +23,21 @@ class HumanPlayer : public Player
 		int getAction(std::shared_ptr<Game> game);
 };
 
+class RandomPlayer : public Player
+{
+	public:
+		int getAction(std::shared_ptr<Game> game);
+};
+/*
+class NNPlayer : public Player
+{
+	private:
+		NNWrapper nn;
 
+	public:
+		int getAction(std::shared_ptr<Game> game);
+};
+*/
 class AlphaZeroPlayer : public Player
 {	
 	private:

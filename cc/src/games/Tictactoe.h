@@ -21,10 +21,12 @@ class TicTacToe : public Game
 		TicTacToe(int boardSize, float player);
 		std::unique_ptr<Game> copy();
 		void printBoard();
+		int getInputPlanes();
+		int getOutputPlanes();
 		void play(int action);
 		bool ended();
 		int getWinner();
-		int getBoardSize();
+		std::vector<int> getBoardSize();
 		float getPlayer();
 		bool findWin(Matrix<bool,Dynamic,Dynamic> playerPositions);
 		bool isWin(Matrix<bool,Dynamic,Dynamic> smallBoard);
