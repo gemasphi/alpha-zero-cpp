@@ -1,5 +1,8 @@
+<<<<<<< HEAD
 #ifndef UTILS_H     
 #define  UTILS_H
+=======
+>>>>>>> 4f6c57b7d58c4c7c93b660eccc6a58695228fb3b
 #include "eigen/Eigen/Dense"
 #include "eigen/Eigen/Core"
 #include <torch/script.h>

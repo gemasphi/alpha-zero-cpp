@@ -19,7 +19,7 @@ void NNWrapper::reload(std::string filename){
 	torch::jit::script::Module previous_module = this->module;
 	try {
 		this->module = torch::jit::load(filename, torch::kCUDA);
-	}
+		this->module = torch::jit::load(filename);
 	catch (const c10::Error& e) {
 		std::cerr << "error reloading the model, using old model\n";
 		this->module = previous_module;
@@ -36,8 +36,4 @@ std::vector<NN::Output> NNWrapper::predict(NN::Input input){
 	for(int i = 0; i < input.batch_size; i++){
 		o.push_back(NN::Output(output, i));
 	} 
-
-	return o;
-}
-		
 

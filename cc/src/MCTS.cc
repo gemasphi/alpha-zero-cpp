@@ -296,6 +296,7 @@ class MCTS
 					this->netCache[board] = res;
 				}
 
+
 				leaf->expand(res.policy, dirichlet_alpha);
 				leaf->backup(res.value);
 			}

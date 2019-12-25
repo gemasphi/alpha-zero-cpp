@@ -8,16 +8,22 @@ import numpy as np
 from typing import Tuple
 
 class NetWrapper(object):
+<<<<<<< HEAD
     def __init__(self, lr = 0.01, wd = 0.015):
         super(NetWrapper, self).__init__()
 
     def build(self, input_planes, board_dim, action_size, output_planes, res_layer_number):
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+=======
+    def __init__(self, input_planes, board_dim, action_size, output_planes, res_layer_number):
+        super(NetWrapper, self).__init__()
+>>>>>>> 4f6c57b7d58c4c7c93b660eccc6a58695228fb3b
         self.nn = AlphaZeroNet(input_planes = input_planes, 
                               board_dim = board_dim, 
                               action_size = action_size, 
                               output_planes = output_planes, 
                               res_layer_number = res_layer_number
+<<<<<<< HEAD
                               ).to(self.device)
 
     def build_optim(self, lr = 0.01, wd = 0.05, momentum=0.9, scheduler_params = None):
@@ -43,6 +49,34 @@ class NetWrapper(object):
         self.scheduler.step()
 
         return loss.item(), v_loss.item(), p_loss.item()
+=======
+                              )
+
+    def train(self, data, batch_size = 16, loss_display = 5, training_steps = 150, lr = 0.01 , wd = 0.015):
+        self.nn.train()
+        self.optimizer = optim.Adam(self.nn.parameters(), lr = lr, weight_decay = wd)
+
+        total_loss = 0.0
+#        running_loss = 0
+
+        #for i in range(training_steps): 
+        board, policy, value = data
+
+        self.optimizer.zero_grad()
+        v, p = self.nn(torch.Tensor(board))
+        loss = self.nn.loss((v, p), (torch.Tensor(value), torch.Tensor(policy)))
+        loss.backward()
+        self.optimizer.step()
+#        running_loss += loss.item()
+        total_loss += loss.item()
+        
+ #       if i!= 0 and i % loss_display == 0:    
+ #           print('[%d, %5d] loss: %.3f' %
+ #                 (1, i + 1, running_loss / loss_display))
+ #           running_loss = 0.0
+
+        return total_loss
+>>>>>>> 4f6c57b7d58c4c7c93b660eccc6a58695228fb3b
     
     def predict(self, board):
         self.nn.eval()
@@ -67,6 +101,7 @@ class NetWrapper(object):
             os.mkdir(folder)
 
         self.nn.eval()
+<<<<<<< HEAD
 
         self.nn.cpu()
         cpu_loc = "{}/cpu_{}".format(folder, model_name)
@@ -85,6 +120,14 @@ class NetWrapper(object):
     def load_model(self, path = "models/fdsmodel.pt", load_optim = False):
         cp = torch.load(path)
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+=======
+        traced_model = torch.jit.script(self.nn)
+        traced_model.save("{}/{}".format(folder, model_name))
+        return traced_model
+
+    def load_model(self, path = "models/fdsmodel.pt", load_optim = False):
+        cp = torch.load(path)
+>>>>>>> 4f6c57b7d58c4c7c93b660eccc6a58695228fb3b
 
         self.nn.load_state_dict(cp['model_state_dict'])
         if load_optim:   
@@ -96,9 +139,13 @@ class NetWrapper(object):
         return self.nn
     
     def load_traced_model(self, path = "models/traced_model_new.pt"):
+<<<<<<< HEAD
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         self.nn = torch.jit.load(path)
         self.nn.cuda()
+=======
+        self.nn = torch.jit.load(path)
+>>>>>>> 4f6c57b7d58c4c7c93b660eccc6a58695228fb3b
         print("Netwrapper: Traced model loaded")
         return self.nn
 
