@@ -1,40 +1,42 @@
 #include <iostream>
-#include "utils.h"
 #include "NNWrapper.h"
-#include "games/eigen/Eigen/Dense"
-#include "games/eigen/Eigen/Core"
+#include "eigen/Eigen/Dense"
+#include "eigen/Eigen/Core"
 #include <torch/script.h>
        
 using namespace Eigen;
 
 NNWrapper::NNWrapper(std::string filename){
 	try {
-		this->module = torch::jit::load(filename);
+		this->module = torch::jit::load(filename, torch::kCUDA);
 	}
 	catch (const c10::Error& e) {
 		std::cerr << "error loading the model\n";
 	}
 }
 
+void NNWrapper::reload(std::string filename){
+	torch::jit::script::Module previous_module = this->module;
+	try {
+		this->module = torch::jit::load(filename, torch::kCUDA);
+	}
+	catch (const c10::Error& e) {
+		std::cerr << "error reloading the model, using old model\n";
+		this->module = previous_module;
+	}
+}
 
-NN::Output NNWrapper::predict(MatrixXf board){
-	auto torch_board = utils::eigen2libtorch(board);
 
-	std::vector<torch::jit::IValue> inputs;
-	inputs.push_back(torch_board);
-	
-	auto output = this->module.forward(inputs).toTuple()->elements();
-	
-	float value = output[0].toTensor().data_ptr<float>()[0];
-	
-	auto p = output[1].toTensor();
-	Eigen::Map<ArrayXf> policy(p.data_ptr<float>(), p.size(1));
-	
-	NN::Output o = {
-	.value = value,
-	.policy = policy
-	};
-	
+std::vector<NN::Output> NNWrapper::predict(NN::Input input){
+	std::vector<torch::jit::IValue> jit_inputs;
+	jit_inputs.push_back(input.boards.to(at::kCUDA));
+	torch::jit::IValue output = this->module.forward(jit_inputs);
+	std::vector<NN::Output> o;
+
+	for(int i = 0; i < input.batch_size; i++){
+		o.push_back(NN::Output(output, i));
+	} 
+
 	return o;
 }
 		

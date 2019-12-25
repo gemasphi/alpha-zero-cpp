@@ -1,9 +1,10 @@
 #include <Tictactoe.h>
 #include <iostream>
-#include "eigen/Eigen/Dense"
-#include "eigen/Eigen/Core"
+#include "../eigen/Eigen/Dense"
+#include "../eigen/Eigen/Core"
 #include <stdexcept>
 #include <sstream>
+#include <memory>
 
 using namespace Eigen;
 
@@ -13,9 +14,24 @@ TicTacToe::TicTacToe(int boardSize, float player){
 	this->player = 1;
 }
 
-TicTacToe::TicTacToe(TicTacToe& t){
-	this->board = t.getBoard();
-	this->boardSize = t.getBoardSize();
+std::unique_ptr<Game> TicTacToe::copy(){
+	return std::make_unique<TicTacToe>(*this);
+}
+
+int TicTacToe::getActionSize(){
+	return this->boardSize*this->boardSize;
+}
+
+std::vector<int> TicTacToe::getBoardSize(){
+	return {this->boardSize, this->boardSize};
+}
+
+int TicTacToe::getInputPlanes(){
+	return 1;
+}
+
+int TicTacToe::getOutputPlanes(){
+	return 1;
 }
 
 void TicTacToe::printBoard(){
@@ -43,15 +59,14 @@ bool TicTacToe::ended(){
 		if (this->findWin(playerPositions)){
 			this->winner = p * this->player;
 			return true;
-		};
-						
-
-		if((this->board.array() == 0).count() == 0){
-			this->winner = 0;
-			return true;
-		}								
+		};						
 	}
 
+	if((this->board.array() == 0).count() == 0){
+		this->winner = 0;
+		return true;
+	}	
+	
 	return false;
 }
 
@@ -59,6 +74,9 @@ int TicTacToe::getWinner(){
 	return this->winner;
 }
 
+int TicTacToe::getCanonicalWinner(){
+	return this->winner*this->player;
+}
 bool TicTacToe::findWin(Matrix<bool,Dynamic,Dynamic> playerPositions){
 	for (int i = 0; i < this->boardSize - this->inRow + 1; i++){
 		for (int j = 0; j < this->boardSize - this->inRow + 1; j++){
@@ -79,14 +97,6 @@ bool TicTacToe::isWin(Matrix<bool,Dynamic,Dynamic> smallBoard){
 
 	return vertical.any() or horizontal.any() or ldiagonal or rdiagonal;
 }	
-
-int TicTacToe::getActionSize(){
-	return this->boardSize*this->boardSize;
-}
-
-int TicTacToe::getBoardSize(){
-	return this->boardSize;
-}
 
 MatrixXf TicTacToe::getBoard(){
 	return this->board;

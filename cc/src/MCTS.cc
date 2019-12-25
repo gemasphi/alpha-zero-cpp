@@ -1,22 +1,26 @@
+#ifndef MCTS_CC_
+#define MCTS_CC_
+
 #include <iostream>
 #include <map>
-#include <Tictactoe.h>
 #include "NNWrapper.h"
-#include "games/eigen/Eigen/Dense"
-#include "games/eigen/Eigen/Core"
+#include <Game.h>
+#include "eigen/Eigen/Dense"
+#include "eigen/Eigen/Core"
+#include "utils.h"
 #include <memory>
 #include <torch/script.h>
 #include <limits>       
 using namespace Eigen;
 
+
 class GameState : public std::enable_shared_from_this<GameState>
 {
 	private:
-		std::shared_ptr<TicTacToe> game;
+		std::shared_ptr<Game> game;
 		int action;
 		bool isExpanded;
-
-		std::map<int, std::shared_ptr<GameState>> children;
+		std::vector<std::shared_ptr<GameState>> children;
 
 	public:
 		std::shared_ptr<GameState> parent;
@@ -24,7 +28,7 @@ class GameState : public std::enable_shared_from_this<GameState>
 		ArrayXf childP;
 		ArrayXf childN;
 
-		GameState(std::shared_ptr<TicTacToe> game, int action, std::shared_ptr<GameState> parent){
+		GameState(std::shared_ptr<Game> game, int action, std::shared_ptr<GameState> parent){
 			this->isExpanded = false;;
 			this->parent = parent;
 			this->game = game;
@@ -32,6 +36,7 @@ class GameState : public std::enable_shared_from_this<GameState>
 			this->childW = ArrayXf::Zero(game->getActionSize());
 			this->childP = ArrayXf::Zero(game->getActionSize());
 			this->childN = ArrayXf::Zero(game->getActionSize());
+			this->children = std::vector<std::shared_ptr<GameState>>(game->getActionSize());  
 		}
 
 		void addVirtualLoss(){
@@ -95,8 +100,9 @@ class GameState : public std::enable_shared_from_this<GameState>
 		}
 
 		std::shared_ptr<GameState> play(int action){
-			if (this->children.find(action) == this->children.end()){
-				std::shared_ptr<TicTacToe> t = std::make_shared<TicTacToe>(*game);
+			if (!this->children[action]){
+				std::unique_ptr<Game> t_unique = this->game->copy();
+				std::shared_ptr<Game> t = std::move(t_unique);
 				t->play(action);
 
 				this->children[action] = std::make_shared<GameState>(t, action, shared_from_this()); 
@@ -111,6 +117,7 @@ class GameState : public std::enable_shared_from_this<GameState>
 				current->incN();
 				current->updateW(v);
 				current = current->getParent();
+				v *= -1;
 			}
 		}
 
@@ -119,7 +126,7 @@ class GameState : public std::enable_shared_from_this<GameState>
 		}
 
 		void updateW(float v){
-			this->parent->childW[this->action] -= v;
+			this->parent->childW[this->action] += v;
 		}
 
 		void incN(){
@@ -148,10 +155,38 @@ class GameState : public std::enable_shared_from_this<GameState>
 					   );
 		}
 
-		void expand(ArrayXf p){
+		ArrayXf dirichlet_distribution(ArrayXf alpha){
+			ArrayXf res =  ArrayXf::Zero(alpha.size());
+			std::random_device rd;
+			std::mt19937 gen(rd());
+
+			for(int i; i < alpha.size(); i++){
+				std::gamma_distribution<double> dist(alpha(i),1);
+				auto sample = dist(gen); 
+				res(i) = sample;
+			}
+			
+			if (res.sum() == 0){
+				return res; //TODO: hacky 
+			} else {
+				return res/res.sum();
+			}	
+		} 
+
+
+		void expand(ArrayXf p, float dirichlet_alpha){
 			this->isExpanded = true;
+			
 			ArrayXf poss = this->game->getPossibleActions();
+
+			if (!this->parent->parent){
+				ArrayXf alpha = ArrayXf::Ones(p.size())*dirichlet_alpha;
+				ArrayXf d = dirichlet_distribution(alpha);
+				p = 0.75*p + 0.25*d;
+			}
+
 			this->childP = this->getValidActions(p, poss);
+
 			//std::cout << "p inside " << p << std::endl;
 			//std::cout << "poss " << poss << std::endl;
 			//std::cout << "childp" << this->childP << std::endl;
@@ -168,13 +203,16 @@ class GameState : public std::enable_shared_from_this<GameState>
 		}
 
 		ArrayXf getSearchPolicy(float temp){
-			std::cout << "W" << std::endl;
+			/*std::cout << "W" << std::endl;
 			std::cout << childW << std::endl;
 			std::cout << "N" << std::endl;
 			std::cout << childN << std::endl;
 			std::cout << "P" << std::endl;
-			std::cout << childP << std::endl;
+			std::cout << childP << std::endl;*/
 			ArrayXf count = pow(this->childN,1/temp);
+			//std::cout << "childN " << this->childN << std::endl;
+			//std::cout << "count " << count << std::endl;
+			//std::cout << "count.sum " << count.sum()<< std::endl;
 			return count/count.sum();
 		}
 
@@ -182,12 +220,34 @@ class GameState : public std::enable_shared_from_this<GameState>
 			return game->ended();
 		}
 
+		bool getPlayer(){
+			return game->getPlayer();
+		}
 		bool getWinner(){
 			return game->getWinner();
 		}
 
-		MatrixXf canonicalBoard(){
-			return this->game->getBoard();
+		MatrixXf getCanonicalBoard(){
+			return this->game->getBoard()*this->game->getPlayer();
+		}
+
+		NN::Input getNetworkInput(){
+			std::vector<MatrixXf> game_state ;
+			auto dims = this->game->getBoardSize();
+			std::shared_ptr<GameState> current = shared_from_this();
+			game_state.insert(game_state.begin(), current->getCanonicalBoard());
+
+			for(int i = 0; i < this->game->getInputPlanes() - 1; i++){
+				if (current->getParent()){
+					current =  current->getParent();
+					game_state.insert(game_state.begin(), current->getCanonicalBoard());
+				}
+				else{
+					game_state.insert(game_state.begin(), MatrixXf::Zero(dims[0], dims[1]));
+				}
+			
+			}
+			return NN::Input(game_state);
 		}
 
 /*		std::shared_ptr<GameState> getChildGameState(int action){
@@ -200,67 +260,89 @@ class MCTS
 	private:
 		float cpuct;
 		float dirichlet_alpha;
-		int n_simulations;
+		std::unordered_map<std::string, NN::Output> netCache;
 
 	public:
-		MCTS(int cpuct, int dirichlet_alpha, int n_simulations){
+		MCTS(float cpuct, float dirichlet_alpha){
 			this->cpuct = cpuct;
 			this->dirichlet_alpha = dirichlet_alpha;
-			this->n_simulations = n_simulations;
 		}
 
-		ArrayXf simulate(std::shared_ptr<GameState> root, NNWrapper& model, float temp){
+		ArrayXf simulate(std::shared_ptr<GameState> root, NNWrapper& model, float temp = 1, int n_simulations = 25){
 			std::shared_ptr<GameState> leaf; 
 
 			for (int i = 0; i < n_simulations; i++){
-				//std::cout << "Begining sim: " << i << std::endl;
 				leaf = root->select(this->cpuct);
+				
 
 				if (leaf->endGame()){
-					leaf->backup(leaf->getWinner());
+					leaf->backup(leaf->getWinner()*root->getPlayer());
 					continue;
 				}
 
-				NN::Output res = model.predict(leaf->canonicalBoard());
-				leaf->expand(res.policy);
-				leaf->backup(res.value);
-				//std::cout << "end sim: " << i << std::endl;
-			}
+				NN::Output res;
+				
+				std::stringstream ss;
+    			ss << leaf->getCanonicalBoard();
+    			std::string board = ss.str();
 
+				if (this->netCache.find(board) != this->netCache.end()) {
+					res = this->netCache[board];
+
+				}
+				else{
+					res = model.predict(leaf->getNetworkInput())[0];
+					#pragma omp critical
+					this->netCache[board] = res;
+				}
+
+				leaf->expand(res.policy, dirichlet_alpha);
+				leaf->backup(res.value);
+			}
 			return root->getSearchPolicy(temp);
 
 		}
+		/*
+		ArrayXf threaded_simulate(std::shared_ptr<GameState> root, NNWrapper& model, float temp = 1, int n_simulations = 5){
+			int eval_size = 4;
+			int simulations_to_run = n_simulations / eval_size; 
+			std::vector<GameState> leafs;
+			//we do more than the n_simulations currently
+			
+			for(int i = 0; i < 5 + 1; i++){
+				#pragma omp parallel
+				{
+					GameState leaf = root->select(this->cpuct);
+
+					if (leaf->endGame()){
+						leaf->backup(leaf->getWinner());
+						continue;
+					}
+
+					leaf->addVirtualLoss();
+					leafs.push_back(leaf);
+				}
+
+				if (leafs.size == 0){
+					break;
+				}
+				
+				NN::Output output = model.predict(leafs); 
+   				#pragma omp for
+   				{
+   					for (NN::Output o& : output){
+						leaf.remove_virtual_loss();
+						leaf.expand(o.p, dirichlet_alpha);
+						leaf.backup(o.v);
+   					}
+				}
+			}
+			return root->getSearchPolicy(temp);
+		}
+			*/
+
+
+
 };
 
-int main(){
-	std::shared_ptr<TicTacToe> t = std::make_shared<TicTacToe>(3,1);
-	NNWrapper model = NNWrapper("../../traced_model.pt");
-	
-	MCTS m = MCTS(3, 0.3, 5);
-
-	int action;
-
-	
-	std::shared_ptr<GameState> fakeparentparent;
-	std::shared_ptr<GameState> fakeparent = std::make_shared<GameState>(t, 0, fakeparentparent);
-	while (not t->ended()){
-		std::shared_ptr<GameState> root = std::make_shared<GameState>(t, 0, fakeparent);
-		std::cout << root->childN << std::endl;
-		std::cout << root->childP << std::endl;
-		std::cout << root->childW << std::endl;
-		ArrayXf p = m.simulate(root, model, 1);
-		p.maxCoeff(&action);
-	//	root = root->getChildGameState(action);
-		std::cout << "action probs" << p  << std::endl; 
-		std::cout << "mtcs picked " << action  << std::endl; 
-		t->play(action);
-		t->printBoard();
-		std::cout << "pick an action "; 
-		std::cin >>  action;
-		t->play(action);
-		t->printBoard();
-	//	root = root->getChildGameState(action);
-	}
-
-};
-
+#endif 

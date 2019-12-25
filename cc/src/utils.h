@@ -1,6 +1,9 @@
-#include "games/eigen/Eigen/Dense"
-#include "games/eigen/Eigen/Core"
+#ifndef UTILS_H     
+#define  UTILS_H
+#include "eigen/Eigen/Dense"
+#include "eigen/Eigen/Core"
 #include <torch/script.h>
+#include <random>
 
 using namespace Eigen;
 
@@ -30,3 +33,4 @@ namespace utils{
 	    return T;
 	};	
 };
+#endif 
