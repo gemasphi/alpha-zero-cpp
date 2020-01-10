@@ -15,6 +15,7 @@ namespace NN{
 		ArrayXf policy;
 
 		Output(){};
+		Output(const Output &o) {value = o.value; policy = o.policy; } 
 		Output(torch::jit::IValue output, int batch_i){
 			auto o = output.toTuple()->elements();
 			value =  o[0].toTensor().to(torch::kCPU).data_ptr<float>()[batch_i];
@@ -72,11 +73,16 @@ namespace NN{
 class NNWrapper{
 	private:
 		torch::jit::script::Module module;
-
+		std::unordered_map<std::string, NN::Output> netCache;
+	
 	public:
 		NNWrapper(std::string filename);
 		void reload(std::string filename);
 		std::vector<NN::Output> predict(NN::Input input);
+		bool inCache(std::string board);
+		NN::Output getCachedEl(std::string board);
+		void inserInCache(std::string board, NN::Output o);
+
 };
 
 #endif 

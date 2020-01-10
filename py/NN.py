@@ -8,22 +8,16 @@ import numpy as np
 from typing import Tuple
 
 class NetWrapper(object):
-<<<<<<< HEAD
-    def __init__(self, lr = 0.01, wd = 0.015):
+    def __init__(self):
         super(NetWrapper, self).__init__()
 
     def build(self, input_planes, board_dim, action_size, output_planes, res_layer_number):
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-=======
-    def __init__(self, input_planes, board_dim, action_size, output_planes, res_layer_number):
-        super(NetWrapper, self).__init__()
->>>>>>> 4f6c57b7d58c4c7c93b660eccc6a58695228fb3b
         self.nn = AlphaZeroNet(input_planes = input_planes, 
                               board_dim = board_dim, 
                               action_size = action_size, 
                               output_planes = output_planes, 
                               res_layer_number = res_layer_number
-<<<<<<< HEAD
                               ).to(self.device)
 
     def build_optim(self, lr = 0.01, wd = 0.05, momentum=0.9, scheduler_params = None):
@@ -40,7 +34,7 @@ class NetWrapper(object):
         board, policy, value = torch.Tensor(board).to(self.device), torch.Tensor(policy).to(self.device), torch.Tensor(value).to(self.device)
 
         self.optimizer.zero_grad()
-
+        
         v, p = self.nn(board)
         loss, v_loss, p_loss = self.nn.loss((v, p), (value, policy))
         loss.backward()
@@ -49,34 +43,6 @@ class NetWrapper(object):
         self.scheduler.step()
 
         return loss.item(), v_loss.item(), p_loss.item()
-=======
-                              )
-
-    def train(self, data, batch_size = 16, loss_display = 5, training_steps = 150, lr = 0.01 , wd = 0.015):
-        self.nn.train()
-        self.optimizer = optim.Adam(self.nn.parameters(), lr = lr, weight_decay = wd)
-
-        total_loss = 0.0
-#        running_loss = 0
-
-        #for i in range(training_steps): 
-        board, policy, value = data
-
-        self.optimizer.zero_grad()
-        v, p = self.nn(torch.Tensor(board))
-        loss = self.nn.loss((v, p), (torch.Tensor(value), torch.Tensor(policy)))
-        loss.backward()
-        self.optimizer.step()
-#        running_loss += loss.item()
-        total_loss += loss.item()
-        
- #       if i!= 0 and i % loss_display == 0:    
- #           print('[%d, %5d] loss: %.3f' %
- #                 (1, i + 1, running_loss / loss_display))
- #           running_loss = 0.0
-
-        return total_loss
->>>>>>> 4f6c57b7d58c4c7c93b660eccc6a58695228fb3b
     
     def predict(self, board):
         self.nn.eval()
@@ -101,7 +67,6 @@ class NetWrapper(object):
             os.mkdir(folder)
 
         self.nn.eval()
-<<<<<<< HEAD
 
         self.nn.cpu()
         cpu_loc = "{}/cpu_{}".format(folder, model_name)
@@ -120,15 +85,6 @@ class NetWrapper(object):
     def load_model(self, path = "models/fdsmodel.pt", load_optim = False):
         cp = torch.load(path)
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-=======
-        traced_model = torch.jit.script(self.nn)
-        traced_model.save("{}/{}".format(folder, model_name))
-        return traced_model
-
-    def load_model(self, path = "models/fdsmodel.pt", load_optim = False):
-        cp = torch.load(path)
->>>>>>> 4f6c57b7d58c4c7c93b660eccc6a58695228fb3b
-
         self.nn.load_state_dict(cp['model_state_dict'])
         if load_optim:   
             self.optimizer = optim.Adam(self.nn.parameters(), lr = 0.1, weight_decay = 0.005)
@@ -139,13 +95,9 @@ class NetWrapper(object):
         return self.nn
     
     def load_traced_model(self, path = "models/traced_model_new.pt"):
-<<<<<<< HEAD
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         self.nn = torch.jit.load(path)
         self.nn.cuda()
-=======
-        self.nn = torch.jit.load(path)
->>>>>>> 4f6c57b7d58c4c7c93b660eccc6a58695228fb3b
         print("Netwrapper: Traced model loaded")
         return self.nn
 
@@ -156,7 +108,7 @@ class AlphaZeroNet(nn.Module):
         self.res_layers = torch.nn.ModuleList([ResLayer() for i in range(res_layer_number)])
         self.valueHead = ValueHead(board_dim = board_dim)
         self.policyHead = PolicyHead(board_dim = board_dim, action_size = action_size, output_planes = output_planes)
-
+        
     def forward(self,s):
         s = self.conv(s)
 
@@ -172,14 +124,14 @@ class AlphaZeroNet(nn.Module):
     def loss(self, predicted : Tuple[torch.Tensor, torch.Tensor], label: Tuple[torch.Tensor, torch.Tensor]):
         (v, p) = predicted
         (z, pi) = label
-
+        
         value_error = (z.float() - torch.transpose(v,0,1))**2
         policy_error = (pi.float()*p.log()).sum(1)
 
-        return (value_error - policy_error).mean(), value_error.mean(), - policy_error.mean() #no need to add the l2 regularization term as it is done in the optimizer
+        return  value_error.mean() - policy_error.mean(), value_error.mean(), - policy_error.mean() #no need to add the l2 regularization term as it is done in the optimizer
 
 class ConvLayer(nn.Module):
-    def __init__(self, board_dim = (), inplanes = 1, planes=256, stride=1):
+    def __init__(self, board_dim = (), inplanes = 1, planes=128, stride=1):
         super(ConvLayer, self).__init__()
         self.inplanes = inplanes
         self.board_dim = board_dim
@@ -195,7 +147,7 @@ class ConvLayer(nn.Module):
         return s
 
 class ResLayer(nn.Module):
-    def __init__(self, inplanes=256, planes=256, stride=1):
+    def __init__(self, inplanes=128, planes=128, stride=1):
         super(ResLayer, self).__init__()
         self.conv1 = nn.Conv2d(inplanes, planes, kernel_size=3, stride=stride,
                      padding=1, bias=False)
@@ -223,15 +175,15 @@ class PolicyHead(nn.Module):
         self.action_size = action_size
         self.output_planes = output_planes
 
-        self.conv1 = nn.Conv2d(256, 32, kernel_size=1) # policy head
-        self.bn1 = nn.BatchNorm2d(32)
+        self.conv1 = nn.Conv2d(128, 16, kernel_size=1) # policy head
+        self.bn1 = nn.BatchNorm2d(16)
         
         self.logsoftmax = nn.LogSoftmax(dim=1)
         
         #if self.output_planes > 1:
-        self.conv2 = nn.Conv2d(32, self.output_planes, kernel_size=1) # policy head
+        self.conv2 = nn.Conv2d(16, self.output_planes, kernel_size=1) # policy head
         #else:
-        self.fc = nn.Linear(self.board_dim[0]*self.board_dim[1]*32, self.action_size)
+        self.fc = nn.Linear(self.board_dim[0]*self.board_dim[1]*16, self.action_size)
 
     def forward(self,s):
         p = F.relu(self.bn1(self.conv1(s))) # policy head
@@ -239,7 +191,7 @@ class PolicyHead(nn.Module):
         if self.output_planes > 1:
             p = self.conv2(p)
         else:
-            p = p.view(-1, self.board_dim[0]*self.board_dim[1]*32)
+            p = p.view(-1, self.board_dim[0]*self.board_dim[1]*16)
             p = self.fc(p)
             
         p = self.logsoftmax(p).exp()
@@ -251,10 +203,10 @@ class ValueHead(nn.Module):
     def __init__(self, board_dim = (3,3)):
         super(ValueHead, self).__init__()
         self.board_dim = board_dim
-        self.conv = nn.Conv2d(256, 1, kernel_size=1) # value head
+        self.conv = nn.Conv2d(128, 1, kernel_size=1) # value head
         self.bn = nn.BatchNorm2d(1)
-        self.fc1 = nn.Linear(self.board_dim[0]*self.board_dim[1], 32) 
-        self.fc2 = nn.Linear(32, 1)
+        self.fc1 = nn.Linear(self.board_dim[0]*self.board_dim[1], 16) 
+        self.fc2 = nn.Linear(16, 1)
 
     def forward(self,s):
         v = F.relu(self.bn(self.conv(s))) # value head

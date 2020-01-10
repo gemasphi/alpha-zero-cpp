@@ -1,25 +1,20 @@
 import yaml
-import optuna
-#from src.AlphaZeroTrainer import AlphaZeroTrainer as az 
 from py.NN import NetWrapper
-from py.games.Tictactoe import Tictactoe
-#from py.Player import * 
-#from py.MCTS_virtual_loss import MCTS
 import json 
 import os
 import numpy as np
 import torch.optim as optim
 #import subprocess
-<<<<<<< HEAD
 import sys
 import time
+import pandas as pd
 
-GAME_DIR = "games/"
-SAVE_CHECKPOINT = 100000000000
-TEST_SAVE_CHECKPOINT = 500000000000000
+GAME_DIR = "cc/build/temp/games/"
+SAVE_CHECKPOINT = 1000
+TEST_SAVE_CHECKPOINT = 5000
 LOSS_LOG = 20
-BATCH_SIZE = 128
-GAME_WINDOW = 350
+BATCH_SIZE = 64
+GAME_WINDOW = 0.33
 
 def make_input(history, i, t):
 	player = -1 if i % 2 == 0 else 1
@@ -39,75 +34,67 @@ def sample_batch(batch_size):
 		key = lambda f: os.path.getctime("{}/{}".format(GAME_DIR, f))
 		)[:round(n_games*GAME_WINDOW)]
 
-=======
-
-GAME_DIR = "games/"
-SAVE_CHECKPOINT = 10000000000
-LOSS_LOG = 20
-BATCH_SIZE = 64
-GAME_WINDOW = 35
-
-
-def make_input(history, i):
-	player = -1 if i % 2 == 0 else 1 
-	return player*np.array(history[i])       
-
-def make_target(winner, probs, i):
-	player = -1 if i % 2 == 0 else 1  
-	return probs[i], winner*player 
-
-def sample_batch(batch_size):
-	all_games = sorted(
-		os.listdir(GAME_DIR), 
-		key = lambda f: os.path.getctime("{}/{}".format(GAME_DIR, f))
-		)[:GAME_WINDOW]
-
->>>>>>> 4f6c57b7d58c4c7c93b660eccc6a58695228fb3b
-	game_files = np.random.choice(all_games, size = batch_size)
+	game_size = [os.stat(GAME_DIR + file).st_size for file in all_games]
+	game_files = np.random.choice(all_games, size = batch_size,  p = np.array(game_size)/sum(game_size))
 	#print(game_files)
 	games = [json.load(open(GAME_DIR + game_f)) for game_f in game_files]
 	game_pos = [(g, np.random.randint(len(g['history']))) for g in games]
-	pos = np.array([
-<<<<<<< HEAD
-		[make_input(g['history'], i, 5), *make_target(g['winner'], g['probabilities'], i)] 
+	pos = np.array([[make_input(g['history'], i, 1), *make_target(g['winner'], g['probabilities'], i)] 
 		for (g, i) in game_pos
 		])
 
 	return list(pos[:,0]), list(pos[:,1]), list(pos[:,2])
  
 
-def train_az(model_loc, folder, n_iter = -1, n_epochs = -1):
+def train_az(model_loc, 
+	folder, n_iter = -1,
+	n_epochs = -1, 
+	lr = 0.01,
+	wd = 0.001,
+	momentum = 0.9):
+	
 	scheduler_params = {
-		 "milestones": [5000,15000, 35000],
+		 "milestones": [5000, 10000, 20000],
 		 "gamma": 0.1 
 		}
 
 	nn = NetWrapper()
 	nn.load_traced_model(model_loc)
 	nn.build_optim(
-		lr = 0.01, 
-		wd = 0.0001, 
-		momentum = 0.9,
+		lr = lr, 
+		wd = wd, 
+		momentum = momentum,
 		scheduler_params = scheduler_params)
 
 	i = 0
 	loss, v_loss, p_loss = 0, 0, 0
+	losses = {
+		'epoch': [],
+		'loss': [],
+		'v_loss': [],
+		'p_loss': []
+	}
+	total_loss = 0
 	while True:
 		batch = sample_batch(BATCH_SIZE)
 		n_loss, nv_loss, np_loss = nn.train(batch)
 		loss += n_loss
 		v_loss += nv_loss
 		p_loss += np_loss
-
+		total_loss += n_loss
+		
+		
 		if i % SAVE_CHECKPOINT == 0 and i != 0:
 			print("New model saved")
 			nn.save_traced_model(folder = folder, model_name = "traced_model_new.pt")
-
+		
 		if i % TEST_SAVE_CHECKPOINT == 0:
 			nn.save_traced_model(folder = folder, model_name = "{}_traced_model_new.pt".format(i))
-
+			df = pd.DataFrame(losses)
+			df.to_csv("temp/losses_{}.csv".format(n_iter),index=False) 
+		
 		if i % LOSS_LOG == 0:
-
+			time.sleep(0.1)
 			print("Bacth: {}, \
 				loss: {}, \
 				value_loss: {},\
@@ -115,50 +102,25 @@ def train_az(model_loc, folder, n_iter = -1, n_epochs = -1):
 								loss/LOSS_LOG,  
 								v_loss/LOSS_LOG, 
 								 p_loss/LOSS_LOG))
+			
+			losses['epoch'].append(i)
+			losses['loss'].append(loss/LOSS_LOG)
+			losses['v_loss'].append(v_loss/LOSS_LOG)
+			losses['p_loss'].append(p_loss/LOSS_LOG)
 			loss, v_loss, p_loss = 0, 0, 0
 
-
 		if n_epochs > 0 and i > n_epochs:
-			nn.save_traced_model(folder = "models", model_name = "traced_model_new.pt")
-			#nn.save_traced_model(folder = "models", model_name = "{}_traced_model_new.pt".format(n_iter))
-			#nn.save_model(folder = "models", model_name = "model_new.pt")
-			nn.save_traced_model(folder = folder, model_name = "{}_traced_model_new.pt".format(i))
-
-			break
-
-		i += 1
-
-
-train_az(sys.argv[1], sys.argv[2], int(sys.argv[3]), int(sys.argv[4]))
-=======
-		[make_input(g['history'], i), *make_target(g['winner'], g['probabilities'], i)] 
-		for (g, i) in game_pos
-		])
-
-	return list(pos[:,0]), list(pos[:,1]), list(pos[:,2])
- 
-def train_az(nn, folder, n_iter = -1, n_epochs = -1):
-	nn.load_traced_model("models/traced_model_new.pt")
-	i = 0
-	loss = 0
-	while True:
-		batch = sample_batch(BATCH_SIZE)
-		loss += nn.train(batch)
-		if i % SAVE_CHECKPOINT == 0 and i != 0:
-			print("New model saved")
+			print(n_iter)
 			nn.save_traced_model(folder = folder, model_name = "traced_model_new.pt")
-
-		if i % LOSS_LOG == 0 and i != 0:
-			print(loss/LOSS_LOG)
-			loss = 0
-
-		i += 1
-
-		if n_epochs > 0 and i > n_epochs:
-			nn.save_traced_model(folder = "models", model_name = "traced_model_new.pt")
-			#nn.save_model(folder = "models", model_name = "model_new.pt")
-			nn.save_traced_model(folder = "models", model_name = "{}_traced_model_new.pt".format(n_iter))
+			nn.save_traced_model(folder = folder, model_name = "{}_traced_model_new.pt".format(n_iter))
+		
 
 			break
 
->>>>>>> 4f6c57b7d58c4c7c93b660eccc6a58695228fb3b
+		i += 1
+
+
+	return total_loss/i
+
+if __name__ == "__main__":
+	train_az(sys.argv[1], sys.argv[2], int(sys.argv[3]), int(sys.argv[4]))

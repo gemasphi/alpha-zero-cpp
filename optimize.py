@@ -1,24 +1,21 @@
 import yaml
 import optuna
-from src.AlphaZeroTrainer import AlphaZeroTrainer as az 
-from src.NN import NetWrapper
-from src.games.Tictactoe import Tictactoe
-from src.Player import * 
-from src.MCTS import MCTS
-
-with open("config.yaml", 'r') as f:
-    config = yaml.safe_load(f)
-
-game = Tictactoe(**config['GAME'])
-mcts = MCTS(**config['MCTS'])
+from py.NN import NetWrapper
+from train import train_az
 
 def objective(trial):
-	nn = NetWrapper(game, **config['NN'])
 	lr = trial.suggest_loguniform('lr', 0.01, 0.5)
-	wd = trial.suggest_loguniform('wd', 0.01, 0.5)
-	alphat = az(nn, game, mcts, **config['AZ'])
-	loss = alphat.train(lr, wd)
-	return loss
+	wd = trial.suggest_loguniform('wd', 0.0001, 0.5)
+	momentum = trial.suggest_loguniform('mm', 0.01, 1)
+	return train_az(
+		"models/gpu_traced_model_new.pt",
+		"models", 
+		-1, 
+		500, 
+		lr =lr, 
+		wd = wd,
+		momentum = momentum
+		)
 
 study = optuna.create_study(direction='minimize')
 study.optimize(objective, n_trials = 100)

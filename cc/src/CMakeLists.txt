@@ -8,7 +8,7 @@ find_package(Torch REQUIRED)
 include_directories(${CMAKE_SOURCE_DIR}/games)
 include_directories(${CMAKE_SOURCE_DIR}/games/connect4solver)
 
-add_executable(selfplay selfplay.cc MCTS.cc NNWrapper.cc ${CMAKE_SOURCE_DIR}/games/Tictactoe.cc ${CMAKE_SOURCE_DIR}/games/ConnectFour.cc ${CMAKE_SOURCE_DIR}/games/Game.cc )
+add_executable(selfplay selfplay.cc MCTS.cc NNWrapper.cc Player.cc  ${CMAKE_SOURCE_DIR}/games/Tictactoe.cc ${CMAKE_SOURCE_DIR}/games/ConnectFour.cc ${CMAKE_SOURCE_DIR}/games/Game.cc ${CMAKE_SOURCE_DIR}/games/connect4solver/Solver.cpp)
 target_link_libraries(selfplay ${TORCH_LIBRARIES})
 target_link_libraries(selfplay -lstdc++fs)
 target_link_libraries(selfplay OpenMP::OpenMP_CXX)

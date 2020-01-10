@@ -17,10 +17,22 @@ class Player
 {
 	public:
 		virtual int getAction(std::shared_ptr<Game> game) = 0;
-		static std::unique_ptr<Player> create(std::string type);
 
 };
 
+class PerfectPlayer : public Player
+{
+	public:
+		virtual int getAction(std::shared_ptr<Game> game, std::vector<int>& best_scores) = 0;
+
+};
+
+class ProbabilisticPlayer : public Player
+{
+	public:
+		virtual int getAction(std::shared_ptr<Game> game, bool deterministc) = 0;
+
+};
 
 class HumanPlayer : public Player
 {
@@ -34,34 +46,42 @@ class RandomPlayer : public Player
 		int getAction(std::shared_ptr<Game> game);
 };
 
-class ConnectSolver : public Player
+
+
+class ConnectSolver : public PerfectPlayer
 {
 	Solver solver;
 	public:
 		ConnectSolver(std::string opening_book);
+		int getAction(std::shared_ptr<Game> game, std::vector<int>& best_scores);
 		int getAction(std::shared_ptr<Game> game);
-};
 
-/*
-class NNPlayer : public Player
-{
 	private:
-		NNWrapper nn;
-
-	public:
-		NNPlayer(NNWrapper nn);
-		int getAction(std::shared_ptr<Game> game);
+		std::vector<int> calcScores(std::shared_ptr<Game> game);
 };
-*/
-class AlphaZeroPlayer : public Player
+
+class NNPlayer : public ProbabilisticPlayer
+{
+	NNWrapper& nn;
+	
+	public:
+		NNPlayer(NNWrapper& nn);
+		int getAction(std::shared_ptr<Game> game);
+		int getAction(std::shared_ptr<Game> game, bool deterministc);
+
+};
+
+class AlphaZeroPlayer : public ProbabilisticPlayer
 {	
 	private:
-		NNWrapper nn;
-		MCTS mcts;
+		NNWrapper& nn;
+		MCTS& mcts;
+
 
 	public:
-		AlphaZeroPlayer(NNWrapper nn, MCTS mcts);
+		AlphaZeroPlayer(NNWrapper& nn, MCTS& mcts);
 		int getAction(std::shared_ptr<Game> game);
+		int getAction(std::shared_ptr<Game> game, bool deterministc);
 };
 
 #endif 

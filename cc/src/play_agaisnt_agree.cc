@@ -14,14 +14,14 @@ namespace fs = std::experimental::filesystem;
 namespace Match{
 	struct Info {
 		Game& game;
-		ProbabilisticPlayer& p1;
-		ProbabilisticPlayer& p2;
+		Player& p1;
+		Player& p2;
 		std::shared_ptr<PerfectPlayer> perfectPlayer;
 
 		Info(
 			Game& game,
-			ProbabilisticPlayer& p1,
-			ProbabilisticPlayer& p2,
+			Player& p1,
+			Player& p2,
 			std::shared_ptr<PerfectPlayer> perfectPlayer
 			): 
 			game(game),
@@ -72,8 +72,8 @@ namespace Match{
 
 Match::Result play_game(Match::Info m, bool print = false){
 	std::shared_ptr<Game> game = m.game.copy();
-	ProbabilisticPlayer& p1 = m.p1;
-	ProbabilisticPlayer& p2 = m.p2;
+	Player& p1 = m.p1;
+	Player& p2 = m.p2;
 	std::shared_ptr<PerfectPlayer> perfectPlayer = m.perfectPlayer;
 
 	int i = 0;
@@ -83,8 +83,8 @@ Match::Result play_game(Match::Info m, bool print = false){
 
 	Match::Result result = Match::Result();
 	while (not game->ended()){
-		action = (i % 2 == 0) ? p1.getAction(game, (i > 3))
-							  : p2.getAction(game, (i > 3));  
+		action = (i % 2 == 0) ? p1.getAction(game)
+							  : p2.getAction(game);  
 							  //: p2.getAction(game, (i > 3));  
 
 		if (perfectPlayer and i%2 == 0){
@@ -168,9 +168,9 @@ int main(int argc, char** argv){
 	NNWrapper nn = NNWrapper(argv[2]);
 	AlphaZeroPlayer p1 = AlphaZeroPlayer(nn, mcts);
 	
-	MCTS mcts2 = MCTS(1.5, 1);
-	NNWrapper nn2 = NNWrapper(argv[5]);
-	AlphaZeroPlayer p2 = AlphaZeroPlayer(nn2, mcts2);
+	//MCTS mcts2 = MCTS(1.5, 1);
+	//NNWrapper nn2 = NNWrapper(argv[5]);
+	//AlphaZeroPlayer p2 = AlphaZeroPlayer(nn2, mcts2);
 	//NNPlayer p1 = NNPlayer(nn);
 	//NNPlayer p2 = NNPlayer(nn2);
 	//HumanPlayer p1 = HumanPlayer();
@@ -180,9 +180,9 @@ int main(int argc, char** argv){
 	//ConnectSolver p1 = ConnectSolver(argv[4]);
 	
 	std::shared_ptr<PerfectPlayer> 
-		perfectPlayer;// = std::make_shared<ConnectSolver>(argv[4]); 
+		perfectPlayer = std::make_shared<ConnectSolver>(argv[4]); 
 	
-	//RandomPlayer p2 = RandomPlayer();
+	RandomPlayer p2 = RandomPlayer();
 	//RandomPlayer p1 = RandomPlayer();
 
 	Match::Info m = Match::Info(

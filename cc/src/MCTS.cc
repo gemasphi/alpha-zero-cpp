@@ -13,7 +13,7 @@
 #include <limits>       
 using namespace Eigen;
 
-
+//TODO add asserts bruv
 class GameState : public std::enable_shared_from_this<GameState>
 {
 	private:
@@ -72,11 +72,12 @@ class GameState : public std::enable_shared_from_this<GameState>
 				*/
 				puct = current->childQ() + current->childU(cpuct);
 				action = getBestAction(puct, current);
+				
 				/*std::cout << "puct" << puct<< std::endl;
 				std::cout << "puct q" << q<< std::endl;
 				std::cout << "puct u" << u<< std::endl;
-				std::cout << "puct action" << action<< std::endl;
-				*/
+				std::cout << "puct action" << action<< std::endl;*/
+				
 				current = current->play(action);
 			}
 
@@ -86,7 +87,7 @@ class GameState : public std::enable_shared_from_this<GameState>
 		int getBestAction(ArrayXf puct, std::shared_ptr<GameState> current){
 			ArrayXf poss = current->game->getPossibleActions();
 			float max = std::numeric_limits<float>::lowest();
-			int action;
+			int action = -1;
 			for (int i; i < poss.size(); i++){
 				if (poss[i] != 0){
 					if(puct[i] > max){
@@ -95,14 +96,13 @@ class GameState : public std::enable_shared_from_this<GameState>
 					}	
 				}				
 			}
-
+						
 			return action;			
 		}
 
 		std::shared_ptr<GameState> play(int action){
 			if (!this->children[action]){
-				std::unique_ptr<Game> t_unique = this->game->copy();
-				std::shared_ptr<Game> t = std::move(t_unique);
+				std::shared_ptr<Game> t = std::move(this->game->copy());
 				t->play(action);
 
 				this->children[action] = std::make_shared<GameState>(t, action, shared_from_this()); 
@@ -140,7 +140,7 @@ class GameState : public std::enable_shared_from_this<GameState>
 		float getP(){
 			return this->parent->childP(this->action);
 		}
-
+		
 		ArrayXf childQ(){
 			return this->childW / (ArrayXf::Ones(game->getActionSize()) + this->childN);
 		}
@@ -231,6 +231,7 @@ class GameState : public std::enable_shared_from_this<GameState>
 			return this->game->getBoard()*this->game->getPlayer();
 		}
 
+		//Todo: this shouldnt belong to this class
 		NN::Input getNetworkInput(){
 			std::vector<MatrixXf> game_state ;
 			auto dims = this->game->getBoardSize();
@@ -260,7 +261,6 @@ class MCTS
 	private:
 		float cpuct;
 		float dirichlet_alpha;
-		std::unordered_map<std::string, NN::Output> netCache;
 
 	public:
 		MCTS(float cpuct, float dirichlet_alpha){
@@ -280,29 +280,36 @@ class MCTS
 					continue;
 				}
 
-				NN::Output res;
+				NN::Output res = maybeEvaluate(model, leaf);
 				
-				std::stringstream ss;
-    			ss << leaf->getCanonicalBoard();
-    			std::string board = ss.str();
-
-				if (this->netCache.find(board) != this->netCache.end()) {
-					res = this->netCache[board];
-
-				}
-				else{
-					res = model.predict(leaf->getNetworkInput())[0];
-					#pragma omp critical
-					this->netCache[board] = res;
-				}
-
-
 				leaf->expand(res.policy, dirichlet_alpha);
 				leaf->backup(res.value);
 			}
 			return root->getSearchPolicy(temp);
 
 		}
+
+		//TODO: THis should be inside NNWrapper 
+		NN::Output maybeEvaluate(NNWrapper& model, std::shared_ptr<GameState> leaf){
+			std::stringstream ss;
+    		ss << leaf->getCanonicalBoard();
+    		std::string board = ss.str();	
+    		
+
+			if (model.inCache(board)) {
+				return model.getCachedEl(board);
+			}
+			else{
+				NN::Output res = model.predict(leaf->getNetworkInput())[0];
+				
+				#pragma omp critical(netCache)
+				model.inserInCache(board, res);
+				
+				return res;
+			}
+
+		}
+
 		/*
 		ArrayXf threaded_simulate(std::shared_ptr<GameState> root, NNWrapper& model, float temp = 1, int n_simulations = 5){
 			int eval_size = 4;

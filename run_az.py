@@ -1,5 +1,5 @@
 import subprocess
-import json 
+import json
 from py.NN import NetWrapper 
 from multiprocessing import Process
 import multiprocessing
@@ -50,42 +50,52 @@ def launch_training_job(model_loc, n_iter = -1, n_epochs = -1, log_to = ""):
 	return subprocess.Popen(['python','train.py', model_loc, "models", str(n_iter), str(n_epochs)],  stdout = log_to)
 
 
-def launch_play_agaisnt_job(game, model_loc, n_games = -1, log_to = ""):
-	return subprocess.Popen(['cc/build/play_agaisnt', game, model_loc, str(n_games)], stdout = log_to)
+def launch_play_agaisnt_job(game, model_loc, n_games = -1, perfect_player_loc = "", p2 = ""):
+	return subprocess.Popen(['cc/build/play_agaisnt', game, model_loc, str(n_games), perfect_player_loc, p2])
 
 GAME = "CONNECTFOUR"
 N_JOBS = 1
-AYNSC = False
-N_ITERS = 500 
-N_EPOCHS = 1500
+AYNSC = True
+N_ITERS = 500
+N_EPOCHS = 10000
 TEST_INTERVAL = 15
 
 train_log, selfplay_log, play_agaisnt_log = setup_logs()
 
 if AYNSC:
+	i = 0
 	cpu_loc, gpu_loc, net = build_network(GAME)
 	jobs = launch_selfplay_jobs(GAME, cpu_loc, n_jobs = N_JOBS , log_to = selfplay_log)
-	p = launch_training_job(gpu_loc, log_to = train_log)
 
-	#while True:
-	#	launch_play_agaisnt_job(GAME, cpu_loc, n_games = 100, log_to = play_agaisnt_log).wait()	
-	#	time.sleep(TEST_INTERVAL * 60)
-
+	print("Launched")
+	time.sleep(2*60)
+	print("Training started")
+	p = launch_training_job(gpu_loc,i, -1, log_to = train_log)
 	p.wait()
+	print("Testing started")
+	#launch_play_agaisnt_job(GAME, gpu_loc, n_games = 25)
+	i += 1
+	"""
 	for j in jobs:
 		j.wait()
+	"""
 else:
-	cpu_loc, gpu_loc = "models/cpu_traced_model_new.pt", "models/gpu_traced_model_new.pt"
+	#cpu_loc, gpu_loc = "models/cpu_traced_model_new.pt", "models/gpu_traced_model_new.pt"
+
 	#cpu_loc, gpu_loc, net = build_network(GAME)
+	#cpu_loc = "models/cpu_traced_model_new.pt"
+	#gpu_loc = "models/gpu_traced_model_new.pt"
 	for i in range(N_ITERS):
-		jobs = launch_selfplay_jobs(GAME, cpu_loc, n_games = 40, n_jobs = N_JOBS,  log_to = selfplay_log)
-		
+
+		jobs = launch_selfplay_jobs(GAME, cpu_loc, n_games = 30, n_jobs = N_JOBS,  log_to = selfplay_log)
+
 		for j in jobs:
 			j.wait()
-		
+
 		print("Training started")
 		p = launch_training_job(gpu_loc, i, N_EPOCHS,  log_to = train_log)
-		p.wait()
 		print("Training ended")
+		p.wait()
+		
 
-		#launch_play_agaisnt_job(GAME, model_loc, n_games = 10).wait()
+		#launch_play_agaisnt_job(GAME, "models/gpu_{}_traced_model_new.pt".format(i), n_games = 20, p2 = "models/gpu_{}_traced_model_new.pt".format(i - 1))
