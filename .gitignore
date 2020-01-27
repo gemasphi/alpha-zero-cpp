@@ -1,6 +1,6 @@
 models
 plots
-cc/build
+build
 __pycache__
 games
 temp
