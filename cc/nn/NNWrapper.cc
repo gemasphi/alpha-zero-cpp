@@ -1,6 +1,28 @@
 #include "NNWrapper.h"
 
 using namespace Eigen;
+
+
+NN::Output NNWrapper::maybeEvaluate(std::shared_ptr<GameState> leaf){
+	std::stringstream ss;
+	ss << leaf->getCanonicalBoard();
+	std::string board = ss.str();	
+	
+
+	if (this->inCache(board)) {
+		return this->getCachedEl(board);
+	}
+	else{
+		NN::Output res = this->predict(leaf->getNetworkInput())[0];
+		
+		//pragma omp critical(netCache)
+		this->inserInCache(board, res);
+		
+		return res;
+	}
+
+}
+
 NNWrapper::NNWrapper(std::string filename){
 	try {
 		std::cout << "loading the model\n";

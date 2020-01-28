@@ -40,8 +40,6 @@ void play_game(std::shared_ptr<Game> n_game, MCTS& mcts, NNWrapper& model, int c
 
 	int action;
 	ArrayXf p;
-	std::shared_ptr<GameState> fakeparentparent;
-	std::shared_ptr<GameState> fakeparent = std::make_shared<GameState>(game, 0, fakeparentparent);
 	int game_length = 0;
 	float temp = 0.1;
 	while (not game->ended()){
@@ -55,8 +53,7 @@ void play_game(std::shared_ptr<Game> n_game, MCTS& mcts, NNWrapper& model, int c
     	history.push_back(b_v);
 
     	//simulate
-		std::shared_ptr<GameState> root = std::make_shared<GameState>(game, 0, fakeparent);
-		p = mcts.simulate(root, model, temp, 600);
+		p = mcts.simulate(game, model, temp, 600);
 
 		//save probability
     	std::vector<float> p_v(p.data(), p.data() + p.size());

@@ -39,7 +39,6 @@ if(NOT Torch_FOUND)
   file(DOWNLOAD 
     https://download.pytorch.org/libtorch/nightly/cpu/libtorch-cxx11-abi-shared-with-deps-latest.zip 
     ${CMAKE_CURRENT_BINARY_DIR}/libtorch
-    TIMEOUT 60  # seconds
     TLS_VERIFY ON
   )
 

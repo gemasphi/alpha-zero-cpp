@@ -98,11 +98,7 @@ int AlphaZeroPlayer::getAction(std::shared_ptr<Game> game){
 int AlphaZeroPlayer::getAction(std::shared_ptr<Game> game, bool deterministc){
 	int action;
 
-	std::shared_ptr<GameState> fakeparentparent;
-	std::shared_ptr<GameState> fakeparent = std::make_shared<GameState>(game, 0, fakeparentparent);
-	std::shared_ptr<GameState> root = std::make_shared<GameState>(game, 0, fakeparent);
-
-	ArrayXf p = this->mcts.simulate(root, this->nn, 1, 600);
+	ArrayXf p = this->mcts.simulate(game, this->nn, 1, 600);
 	//std::cout<<"probablities"<< "\n" << p << std::endl;
 
 	if (deterministc){
