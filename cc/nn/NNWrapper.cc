@@ -13,7 +13,7 @@ NN::Output NNWrapper::maybeEvaluate(std::shared_ptr<GameState> leaf){
 		return this->getCachedEl(board);
 	}
 	else{
-		NN::Output res = this->predict(leaf->getNetworkInput())[0];
+		NN::Output res = this->predict(NN::Input(leaf->getNetworkInput()))[0];
 		
 		//pragma omp critical(netCache)
 		this->inserInCache(board, res);

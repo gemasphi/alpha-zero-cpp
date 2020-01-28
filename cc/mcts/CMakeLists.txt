@@ -1,6 +1,6 @@
 add_library(gamestate GameState.cc GameState.h)
-target_include_directories(gamestate PUBLIC  ../nn ../games)
-target_link_libraries(gamestate game nnutils)
+target_include_directories(gamestate PUBLIC ../games)
+target_link_libraries(gamestate game)
 
 
 add_library(mcts MCTS.cc MCTS.h GameState.h)

@@ -4,11 +4,11 @@
 #include <iostream>
 #include <map>
 #include <Game.h>
-#include <NNUtils.h>
 #include <Eigen/Dense>
 #include <Eigen/Core>
 #include <memory>
-#include <limits>       
+#include <limits>  
+#include <random>     
 using namespace Eigen;
 
 //TODO add asserts bruv
@@ -62,7 +62,7 @@ class GameState : public std::enable_shared_from_this<GameState>
 		std::shared_ptr<GameState> play(int action);
 		
 		//Todo: this shouldnt belong to this class
-		NN::Input getNetworkInput();
+		std::vector<MatrixXf> getNetworkInput();
 
 /*		std::shared_ptr<GameState> getChildGameState(int action){
 		//	if (this->children.find(action) == this->children.end()){

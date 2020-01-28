@@ -207,7 +207,7 @@ MatrixXf GameState::getCanonicalBoard(){
 }
 
 //Todo: this shouldnt belong to this class
-NN::Input GameState::getNetworkInput(){
+std::vector<MatrixXf> GameState::getNetworkInput(){
 	std::vector<MatrixXf> game_state ;
 	auto dims = this->game->getBoardSize();
 	std::shared_ptr<GameState> current = shared_from_this();
@@ -223,5 +223,5 @@ NN::Input GameState::getNetworkInput(){
 		}
 	
 	}
-	return NN::Input(game_state);
+	return game_state;
 }
