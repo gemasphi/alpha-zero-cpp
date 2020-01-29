@@ -23,7 +23,7 @@ namespace utils{
 		auto T = Tin.to(torch::kCPU);
 		Eigen::Map<MatrixXrm<V>> E(T.data_ptr<V>(), T.size(0), T.size(1));
 		return E;
-	};
+	}
 
 	template <typename V>
 	  torch::Tensor eigen2libtorch(MatrixX<V> &M) {
@@ -31,6 +31,6 @@ namespace utils{
 	    std::vector<int64_t> dims = {E.rows(), E.cols()};
 	    auto T = torch::from_blob(E.data(), dims).clone(); //.to(torch::kCPU);
 	    return T;
-	};	
-};
+	}
+}
 #endif 

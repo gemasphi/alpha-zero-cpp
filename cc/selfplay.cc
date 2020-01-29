@@ -53,7 +53,7 @@ void play_game(std::shared_ptr<Game> n_game, MCTS& mcts, NNWrapper& model, int c
     	history.push_back(b_v);
 
     	//simulate
-		p = mcts.simulate(game, model, temp, 600);
+		p = mcts.simulate(game, model, temp, 3);
 
 		//save probability
     	std::vector<float> p_v(p.data(), p.data() + p.size());
@@ -118,7 +118,7 @@ int main(int argc, char** argv){
 
 	MCTS m = MCTS(2, 1);
 	std::cout << "n games:" << n_games<< std::endl;
-	#pragma omp parallel
+//	#pragma omp parallel
 	{	
 	int i = 0;
 	int count = 1;

@@ -18,7 +18,7 @@ def setup_logs(folder = 'temp'):
 	return train_log, selfplay_log, play_agaisnt_log
 
 def build_network(game):
-	result = subprocess.run(['cc/build/game_info', game], stdout= subprocess.PIPE)
+	result = subprocess.run(['build/game_info', game], stdout= subprocess.PIPE)
 	game_info = json.loads(result.stdout.decode('utf-8'))
 
 	net = NetWrapper()
@@ -40,7 +40,7 @@ def launch_selfplay_jobs(game, model_loc, n_games = -1, n_jobs = 2, log_to = "")
 	jobs = []
 	for i in range(n_jobs):
 		print("Starting selfplay job {}/{}".format(i + 1, n_jobs))
-		jobs.append(subprocess.Popen(['cc/build/selfplay', game, model_loc, str(n_games)],  stdout = log_to))
+		jobs.append(subprocess.Popen(['build/selfplay', game, model_loc, str(n_games)],  stdout = log_to))
 
 	return jobs
 
@@ -51,7 +51,7 @@ def launch_training_job(model_loc, n_iter = -1, n_epochs = -1, log_to = ""):
 
 
 def launch_play_agaisnt_job(game, model_loc, n_games = -1, perfect_player_loc = "", p2 = ""):
-	return subprocess.Popen(['cc/build/play_agaisnt', game, model_loc, str(n_games), perfect_player_loc, p2])
+	return subprocess.Popen(['build/play_agaisnt', game, model_loc, str(n_games), perfect_player_loc, p2])
 
 GAME = "CONNECTFOUR"
 N_JOBS = 1

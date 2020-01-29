@@ -37,7 +37,7 @@ list(APPEND CMAKE_PREFIX_PATH ${CMAKE_BINARY_DIR}/libtorch)
 find_package(Torch)
 if(NOT Torch_FOUND)
   file(DOWNLOAD 
-    https://download.pytorch.org/libtorch/nightly/cpu/libtorch-cxx11-abi-shared-with-deps-latest.zip 
+    https://download.pytorch.org/libtorch/nightly/cpu/libtorch-shared-with-deps-latest.zip
     ${CMAKE_CURRENT_BINARY_DIR}/libtorch
     TLS_VERIFY ON
   )
@@ -63,4 +63,3 @@ if(NOT connect4solver_POPULATED)
 endif()
 
 FILE(GLOB CONNECT_SOLVER_CPP  "${connect4solver_SOURCE_DIR}/*.cpp")
-message(CONNECT_SOLVER_CPP)

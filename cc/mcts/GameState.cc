@@ -1,11 +1,23 @@
 #include "GameState.h"
+#include <assert.h> 
 
 using namespace Eigen;
 
 //TODO add asserts bruv
 GameState::GameState(std::shared_ptr<Game> game, int action, std::shared_ptr<GameState> parent){
-	this->isExpanded = false;;
 	this->parent = parent;
+	this->game = game;
+	this->action = action;
+	this->childW = ArrayXf::Zero(game->getActionSize());
+	this->childP = ArrayXf::Zero(game->getActionSize());
+	this->childN = ArrayXf::Zero(game->getActionSize());
+	this->children = std::vector<std::shared_ptr<GameState>>(game->getActionSize());  
+}
+
+GameState::GameState(std::shared_ptr<Game> game, int action /*= 0*/){
+	std::shared_ptr<GameState> fakeparentparent;
+	std::shared_ptr<GameState> fakeparent = std::make_shared<GameState>(game, 0, fakeparentparent);
+	this->parent = fakeparent;
 	this->game = game;
 	this->action = action;
 	this->childW = ArrayXf::Zero(game->getActionSize());
@@ -39,31 +51,32 @@ std::shared_ptr<GameState> GameState::getParent(){
 std::shared_ptr<GameState> GameState::select(int cpuct){
 	std::shared_ptr<GameState> current = shared_from_this();
 	int action;
-	ArrayXf puct;//, q, u;
+	ArrayXf puct/*, q, u*/;
 	
 	while (current->isExpanded and not current->game->ended()){
 		/*q = current->childQ();
 		u = current->childU(cpuct);
 		*/
 		puct = current->childQ() + current->childU(cpuct);
-		action = getBestAction(puct, current);
+		action = current->getBestAction(puct);
 		
 		/*std::cout << "puct" << puct<< std::endl;
 		std::cout << "puct q" << q<< std::endl;
 		std::cout << "puct u" << u<< std::endl;
-		std::cout << "puct action" << action<< std::endl;*/
-		
+		std::cout << "puct action" << action<< std::endl;
+		*/
 		current = current->play(action);
 	}
 
 	return current;
 }
 
-int GameState::getBestAction(ArrayXf puct, std::shared_ptr<GameState> current){
-	ArrayXf poss = current->game->getPossibleActions();
+int GameState::getBestAction(ArrayXf puct){
+	ArrayXf poss = this->game->getPossibleActions();
 	float max = std::numeric_limits<float>::lowest();
 	int action = -1;
-	for (int i; i < poss.size(); i++){
+
+	for (int i = 0; i < poss.size(); i++){
 		if (poss[i] != 0){
 			if(puct[i] > max){
 				action = i; 	
@@ -71,7 +84,8 @@ int GameState::getBestAction(ArrayXf puct, std::shared_ptr<GameState> current){
 			}	
 		}				
 	}
-				
+	
+	assert(action != -1);			
 	return action;			
 }
 
@@ -92,12 +106,10 @@ void GameState::backup(float v){
 		current->incN();
 		current->updateW(v);
 		current = current->getParent();
+		std::cout<< current->getCanonicalBoard()<<std::endl;
 		v *= -1;
 	}
-}
-
-ArrayXf GameState::getchildW(){
-	return this->childW;
+		std::cout<<"fim backup"<<std::endl;
 }
 
 void GameState::updateW(float v){
@@ -112,9 +124,7 @@ float GameState::getN(){
 	return this->parent->childN(this->action);
 }
 
-float GameState::getP(){
-	return this->parent->childP(this->action);
-}
+
 
 ArrayXf GameState::childQ(){
 	return this->childW / (ArrayXf::Ones(game->getActionSize()) + this->childN);

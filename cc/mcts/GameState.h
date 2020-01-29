@@ -11,13 +11,14 @@
 #include <random>     
 using namespace Eigen;
 
+
 //TODO add asserts bruv
 class GameState : public std::enable_shared_from_this<GameState>
 {
 	private:
 		std::shared_ptr<Game> game;
 		int action;
-		bool isExpanded;
+		bool isExpanded = false;
 		std::vector<std::shared_ptr<GameState>> children;
 
 	public:
@@ -27,6 +28,8 @@ class GameState : public std::enable_shared_from_this<GameState>
 		ArrayXf childN;
 
 		GameState(std::shared_ptr<Game> game, int action, std::shared_ptr<GameState> parent);
+
+		GameState(std::shared_ptr<Game> game, int action = 0); //root node constructor
 		
 		void addVirtualLoss();
 		void removeVirtualLoss();
@@ -35,18 +38,16 @@ class GameState : public std::enable_shared_from_this<GameState>
 		void expand(ArrayXf p, float dirichlet_alpha);
 		void backup(float v);
 		
-		ArrayXf getchildW();
 		void updateW(float v);
 		void incN();
 		float getN();
-		float getP();
 		ArrayXf childQ();
 		ArrayXf childU(float cpuct);
 		
 		ArrayXf getValidActions(ArrayXf pred, ArrayXf poss);
 		ArrayXf getSearchPolicy(float temp);
 		
-		int getBestAction(ArrayXf puct, std::shared_ptr<GameState> current);
+		int getBestAction(ArrayXf puct);
 
 		std::shared_ptr<GameState> getParent();
 		

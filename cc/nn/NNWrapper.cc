@@ -26,7 +26,7 @@ NN::Output NNWrapper::maybeEvaluate(std::shared_ptr<GameState> leaf){
 NNWrapper::NNWrapper(std::string filename){
 	try {
 		std::cout << "loading the model\n";
-		this->module = torch::jit::load(filename, torch::kCUDA);
+		this->module = torch::jit::load(filename, torch::kCPU);
 	}
 	catch (const c10::Error& e) {
 		std::cout << "error loading the model\n";
@@ -50,7 +50,7 @@ void NNWrapper::reload(std::string filename){
 	torch::jit::script::Module previous_module = this->module;
 	try {
 		std::cout << "reloading the model\n";
-		this->module = torch::jit::load(filename, torch::kCUDA);
+		this->module = torch::jit::load(filename, torch::kCPU);
 		netCache = std::unordered_map<std::string, NN::Output>();
 	}
 	catch (const c10::Error& e) {
@@ -61,7 +61,7 @@ void NNWrapper::reload(std::string filename){
 
 std::vector<NN::Output> NNWrapper::predict(NN::Input input){
 	std::vector<torch::jit::IValue> jit_inputs;
-	jit_inputs.push_back(input.boards.to(at::kCUDA));
+	jit_inputs.push_back(input.boards.to(at::kCPU));
 	torch::jit::IValue output = this->module.forward(jit_inputs);
 	std::vector<NN::Output> o;
 

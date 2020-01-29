@@ -73,11 +73,11 @@ class NetWrapper(object):
         traced_model = torch.jit.script(self.nn)
         traced_model.save(cpu_loc)
 
-        self.nn.cuda()
+#        self.nn.cuda()
         gpu_loc = "{}/gpu_{}".format(folder, model_name)
         traced_model = torch.jit.script(self.nn)
         traced_model.save(gpu_loc)
-
+        
         
 
         return cpu_loc, gpu_loc
