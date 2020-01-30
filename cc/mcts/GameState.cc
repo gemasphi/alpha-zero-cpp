@@ -29,7 +29,7 @@ GameState::GameState(std::shared_ptr<Game> game){
 std::ostream& operator<<(std::ostream& os, const GameState& gs)
 {
     os  << "Child N\n" << gs.childN  << std::endl
-    	<< "Child Q\n" << gs.childP  << std::endl
+    	<< "Child P\n" << gs.childP  << std::endl
     	<< "Child W\n" << gs.childW  << std::endl
     	<< "Action" << gs.action 
     	<< "Board\n" << gs.game->getBoard() << std::endl;
@@ -62,34 +62,23 @@ void GameState::expand(ArrayXf p, float dirichlet_alpha){
 	this->childP = this->getValidActions(p, poss);
 }
 
-void GameState::backup(float v){
+void GameState::backup(float v, int n){
 	std::shared_ptr<GameState> current = shared_from_this();
 	while (current->parent){
-		current->incN();
+		current->updateN(n);
 		current->updateW(v);
 		current = current->parent;
 		v *= -1;
 	}
 }
 
-void GameState::addVirtualLoss(){
-	std::shared_ptr<GameState> current = shared_from_this();
-
-	while (current->parent){
-		current->updateW(1);
-		current = current->parent;
-	}
+void GameState::addVirtualLoss(int vloss){
+	this->backup(vloss, 1);
 }
 
-void GameState::removeVirtualLoss(){
-	std::shared_ptr<GameState> current = shared_from_this();
-
-	while (current->parent){
-		current->updateW(-1);
-		current = current->parent;
-	}
+void GameState::removeVirtualLoss(int vloss){
+	this->backup(-vloss, -1);
 }
-
 
 int GameState::getBestAction(float cpuct){
 	ArrayXf puct = this->childQ() + this->childU(cpuct);
@@ -122,14 +111,12 @@ std::shared_ptr<GameState> GameState::play(int action){
 	return this->children[action];
 }
 
-
-
 void GameState::updateW(float v){
 	this->parent->childW[this->action] += v;
 }
 
-void GameState::incN(){
-	this->parent->childN[this->action]++;
+void GameState::updateN(int n){
+	this->parent->childN[this->action] += n;
 }
 
 float GameState::getN(){

@@ -24,7 +24,7 @@ class GameState : public std::enable_shared_from_this<GameState>
 		ArrayXf childN;
 
 		void updateW(float v);
-		void incN();
+		void updateN(int n);
 		float getN();
 		ArrayXf childQ();
 		ArrayXf childU(float cpuct);
@@ -39,12 +39,9 @@ class GameState : public std::enable_shared_from_this<GameState>
 		
 		friend std::ostream& operator<<(std::ostream& os, const GameState& gs);
 		
-		void addVirtualLoss();
-		void removeVirtualLoss();
-		
 		std::shared_ptr<GameState> select(float cpuct);
 		void expand(ArrayXf p, float dirichlet_alpha);
-		void backup(float v);
+		void backup(float v, int n = 1);
 		ArrayXf getSearchPolicy(float temp);
 		
 		//these call the game directly
@@ -54,6 +51,9 @@ class GameState : public std::enable_shared_from_this<GameState>
 
 		std::vector<MatrixXf> getNetworkInput();
 		MatrixXf getCanonicalBoard();
+
+		void addVirtualLoss(int vloss);
+		void removeVirtualLoss(int vloss);
 
 		std::shared_ptr<GameState> getChild(int action);
 };
