@@ -33,6 +33,21 @@ ExternalProject_Add(json
 
 set(JSON_INCLUDE_DIR  ${INSTALL_DEPENDENCIES_DIR}/include/nlohmann/)
 
+ExternalProject_Add(catch
+  URL "https://github.com/catchorg/Catch2/archive/v2.0.1.tar.gz"
+  UPDATE_COMMAND ""
+  CONFIGURE_COMMAND ""
+  BUILD_COMMAND ""
+  INSTALL_COMMAND
+   ${CMAKE_COMMAND} -E copy
+      ${CMAKE_BINARY_DIR}/catch-prefix/src/catch/single_include/catch.hpp
+      ${INSTALL_DEPENDENCIES_DIR}/include/catch/catch.hpp
+ )
+
+set(CATCH_INCLUDE_DIR  ${INSTALL_DEPENDENCIES_DIR}/include/catch/)
+add_library(Catch INTERFACE)
+target_include_directories(Catch INTERFACE ${CATCH_INCLUDE_DIR})
+
 list(APPEND CMAKE_PREFIX_PATH ${CMAKE_BINARY_DIR}/libtorch)
 find_package(Torch)
 if(NOT Torch_FOUND)

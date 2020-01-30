@@ -16,20 +16,19 @@ using namespace Eigen;
 class GameState : public std::enable_shared_from_this<GameState>
 {
 	private:
+		std::vector<std::shared_ptr<GameState>> children;
+		std::shared_ptr<GameState> parent;
+		
 		std::shared_ptr<Game> game;
 		int action;
 		bool isExpanded = false;
-		std::vector<std::shared_ptr<GameState>> children;
-
-	public:
-		std::shared_ptr<GameState> parent;
 		ArrayXf childW;
 		ArrayXf childP;
 		ArrayXf childN;
 
+	public:
 		GameState(std::shared_ptr<Game> game, int action, std::shared_ptr<GameState> parent);
-
-		GameState(std::shared_ptr<Game> game, int action = 0); //root node constructor
+		GameState(std::shared_ptr<Game> game); //root node constructor
 		
 		void addVirtualLoss();
 		void removeVirtualLoss();

@@ -14,12 +14,12 @@ GameState::GameState(std::shared_ptr<Game> game, int action, std::shared_ptr<Gam
 	this->children = std::vector<std::shared_ptr<GameState>>(game->getActionSize());  
 }
 
-GameState::GameState(std::shared_ptr<Game> game, int action /*= 0*/){
+GameState::GameState(std::shared_ptr<Game> game){
 	std::shared_ptr<GameState> fakeparentparent;
 	std::shared_ptr<GameState> fakeparent = std::make_shared<GameState>(game, 0, fakeparentparent);
 	this->parent = fakeparent;
 	this->game = game;
-	this->action = action;
+	this->action = 0;
 	this->childW = ArrayXf::Zero(game->getActionSize());
 	this->childP = ArrayXf::Zero(game->getActionSize());
 	this->childN = ArrayXf::Zero(game->getActionSize());
@@ -106,7 +106,6 @@ void GameState::backup(float v){
 		current->incN();
 		current->updateW(v);
 		current = current->getParent();
-		std::cout<< current->getCanonicalBoard()<<std::endl;
 		v *= -1;
 	}
 		std::cout<<"fim backup"<<std::endl;
@@ -123,7 +122,6 @@ void GameState::incN(){
 float GameState::getN(){
 	return this->parent->childN(this->action);
 }
-
 
 
 ArrayXf GameState::childQ(){
@@ -216,7 +214,6 @@ MatrixXf GameState::getCanonicalBoard(){
 	return this->game->getBoard()*this->game->getPlayer();
 }
 
-//Todo: this shouldnt belong to this class
 std::vector<MatrixXf> GameState::getNetworkInput(){
 	std::vector<MatrixXf> game_state ;
 	auto dims = this->game->getBoardSize();

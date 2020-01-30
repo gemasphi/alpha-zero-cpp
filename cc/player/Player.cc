@@ -89,7 +89,7 @@ std::vector<int> ConnectSolver::calcScores(std::shared_ptr<Game> game){
 }
 
 
-AlphaZeroPlayer::AlphaZeroPlayer(NNWrapper& nn, MCTS& mcts): nn(nn), mcts(mcts){}
+AlphaZeroPlayer::AlphaZeroPlayer(NNWrapper& nn, MCTS::Config mcts): nn(nn), mcts(mcts){}
 
 int AlphaZeroPlayer::getAction(std::shared_ptr<Game> game){
 	return this->getAction(game, true); 
@@ -98,7 +98,7 @@ int AlphaZeroPlayer::getAction(std::shared_ptr<Game> game){
 int AlphaZeroPlayer::getAction(std::shared_ptr<Game> game, bool deterministc){
 	int action;
 
-	ArrayXf p = this->mcts.simulate(game, this->nn, 1, 600);
+	ArrayXf p =  MCTS::simulate(game, this->nn, this->mcts);
 	//std::cout<<"probablities"<< "\n" << p << std::endl;
 
 	if (deterministc){

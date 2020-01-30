@@ -162,13 +162,18 @@ void player_vs_player(std::string id, Match::Info m, int n_games = 1){
 int main(int argc, char** argv){
 	std::shared_ptr<Game> game = Game::create(argv[1]);
 	
-	MCTS mcts = MCTS(1.5, 1);
+    MCTS::Config mcts = { 
+    	2, //cpuct 
+    	1, //dirichlet_alpha
+    	5, // n_simulations
+    	1, //temp
+    };
+
 	NNWrapper nn = NNWrapper(argv[2]);
 	AlphaZeroPlayer p1 = AlphaZeroPlayer(nn, mcts);
 	
-	MCTS mcts2 = MCTS(1.5, 1);
 	NNWrapper nn2 = NNWrapper(argv[5]);
-	AlphaZeroPlayer p2 = AlphaZeroPlayer(nn2, mcts2);
+	AlphaZeroPlayer p2 = AlphaZeroPlayer(nn2, mcts);
 	//NNPlayer p1 = NNPlayer(nn);
 	//NNPlayer p2 = NNPlayer(nn2);
 	//HumanPlayer p1 = HumanPlayer();

@@ -29,7 +29,7 @@ void save_game(std::shared_ptr<Game> game, std::vector<std::vector<float>> proba
 	o << jgame.dump() << std::endl;
 }
 
-void play_game(std::shared_ptr<Game> n_game, MCTS& mcts, NNWrapper& model, int count, int tempthreshold = 8, bool print = false){
+void play_game(std::shared_ptr<Game> n_game, NNWrapper& model, int count, int tempthreshold = 8, bool print = false){
 	std::shared_ptr<Game> game = n_game->copy();
 	std::vector<std::vector<float>> probabilities;
 	std::vector<std::vector<std::vector<float>>> history;
@@ -37,11 +37,17 @@ void play_game(std::shared_ptr<Game> n_game, MCTS& mcts, NNWrapper& model, int c
 	std::random_device rd;
     std::mt19937 gen(rd());
     
-
+    MCTS::Config mcts = { 
+    	2, //cpuct 
+    	1, //dirichlet_alpha
+    	5, // n_simulations
+    	0.1, //temp
+    };
+    
 	int action;
 	ArrayXf p;
 	int game_length = 0;
-	float temp = 0.1;
+
 	while (not game->ended()){
 		//save board
     	Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> board(game->getBoard());
@@ -53,7 +59,7 @@ void play_game(std::shared_ptr<Game> n_game, MCTS& mcts, NNWrapper& model, int c
     	history.push_back(b_v);
 
     	//simulate
-		p = mcts.simulate(game, model, temp, 3);
+		p = MCTS::simulate(game, model, mcts);
 
 		//save probability
     	std::vector<float> p_v(p.data(), p.data() + p.size());
@@ -66,7 +72,7 @@ void play_game(std::shared_ptr<Game> n_game, MCTS& mcts, NNWrapper& model, int c
     	game_length++;
     	
     	if (game_length > tempthreshold){
-    		temp = 1.5;
+    		mcts.temp = 1.5;
     	}
 
     	if (print){
@@ -116,7 +122,6 @@ int main(int argc, char** argv){
 	int RELOAD_MODEL = 3;
 	int n_games = std::stoi(argv[3]);
 
-	MCTS m = MCTS(2, 1);
 	std::cout << "n games:" << n_games<< std::endl;
 //	#pragma omp parallel
 	{	
@@ -124,7 +129,7 @@ int main(int argc, char** argv){
 	int count = 1;
 	NNWrapper model = NNWrapper(argv[2]);
 		while (true){
-			play_game(g, m, model, count);
+			play_game(g, model, count);
 			auto now = std::chrono::system_clock::now();
 			std::time_t now_time = std::chrono::system_clock::to_time_t(now);
 			

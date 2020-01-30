@@ -14,15 +14,18 @@
 using namespace Eigen;
 
 
-class MCTS
+namespace MCTS
 {
-	private:
-		float cpuct;
-		float dirichlet_alpha;
+	struct Config
+	{
+		float cpuct = 1;
+		float dirichlet_alpha = 1;
+		float n_simulations = 25;
+		float temp = 1;
+	};
 
-	public:
-		MCTS(float cpuct, float dirichlet_alpha);
-		ArrayXf simulate(std::shared_ptr<Game> game, NNWrapper& model, float temp = 1, int n_simulations = 25);
-};
+	ArrayXf simulate(std::shared_ptr<Game> game, NNWrapper& model, MCTS::Config cfg);
+	ArrayXf simulate(std::shared_ptr<GameState> root, NNWrapper& model, MCTS::Config cfg);
+}
 
 #endif 

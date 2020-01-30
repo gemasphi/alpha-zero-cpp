@@ -2,41 +2,30 @@
 
 using namespace Eigen;
 
-MCTS::MCTS(float cpuct, float dirichlet_alpha){
-	this->cpuct = cpuct;
-	this->dirichlet_alpha = dirichlet_alpha;
-}
 
-ArrayXf MCTS::simulate(std::shared_ptr<Game> game, NNWrapper& model, float temp, int n_simulations){
-	std::shared_ptr<GameState> root = std::make_shared<GameState>(game);
+ArrayXf MCTS::simulate(std::shared_ptr<GameState> root, NNWrapper& model, MCTS::Config cfg){
 	std::shared_ptr<GameState> leaf; 
 
-	std::cout<< "Starting simulation"<<std::endl;
-	
-	for (int i = 0; i < n_simulations; i++){
-		std::cout<< "antes select"<<std::endl;
-		leaf = root->select(this->cpuct);
-		
-		std::cout<< "select"<<std::endl;
+	for (int i = 0; i < cfg.n_simulations + 1; i++){
+		leaf = root->select(cfg.cpuct);
 
 		if (leaf->endGame()){
 			leaf->backup(leaf->getWinner()*root->getPlayer());
 			continue;
 		}
 
-		std::cout<< "network b"<<std::endl;
 		NN::Output res = model.maybeEvaluate(leaf);
-		std::cout<< "network"<<std::endl;
 		
-		std::cout<< "expand"<<std::endl;
-		leaf->expand(res.policy, dirichlet_alpha);
-		std::cout<< "backup"<<std::endl;
-		std::cout<< res.value<<std::endl;
+		leaf->expand(res.policy, cfg.dirichlet_alpha);
 		leaf->backup(res.value);
-	}
-		std::cout<< "beep"<<std::endl;
-	return root->getSearchPolicy(temp);
 
+	}
+
+	return root->getSearchPolicy(cfg.temp);
+}
+
+ArrayXf MCTS::simulate(std::shared_ptr<Game> game, NNWrapper& model, MCTS::Config cfg){
+	return simulate(std::make_shared<GameState>(game), model, cfg);
 }
 
 /*
