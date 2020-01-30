@@ -6,73 +6,84 @@ using namespace Eigen;
 //TODO add asserts bruv
 GameState::GameState(std::shared_ptr<Game> game, int action, std::shared_ptr<GameState> parent){
 	this->parent = parent;
-	this->game = game;
+	this->children = std::vector<std::shared_ptr<GameState>>(game->getActionSize());  
 	this->action = action;
 	this->childW = ArrayXf::Zero(game->getActionSize());
 	this->childP = ArrayXf::Zero(game->getActionSize());
 	this->childN = ArrayXf::Zero(game->getActionSize());
-	this->children = std::vector<std::shared_ptr<GameState>>(game->getActionSize());  
+	this->game = game;
 }
 
 GameState::GameState(std::shared_ptr<Game> game){
 	std::shared_ptr<GameState> fakeparentparent;
 	std::shared_ptr<GameState> fakeparent = std::make_shared<GameState>(game, 0, fakeparentparent);
 	this->parent = fakeparent;
-	this->game = game;
 	this->action = 0;
+	this->children = std::vector<std::shared_ptr<GameState>>(game->getActionSize());  
 	this->childW = ArrayXf::Zero(game->getActionSize());
 	this->childP = ArrayXf::Zero(game->getActionSize());
 	this->childN = ArrayXf::Zero(game->getActionSize());
-	this->children = std::vector<std::shared_ptr<GameState>>(game->getActionSize());  
+	this->game = game;
 }
 
-void GameState::addVirtualLoss(){
-	std::shared_ptr<GameState> current = shared_from_this();
-
-	while (current->getParent()){
-		current->updateW(1);
-		current = current->getParent();
-	}
-}
-
-void GameState::removeVirtualLoss(){
-	std::shared_ptr<GameState> current = shared_from_this();
-
-	while (current->getParent()){
-		current->updateW(-1);
-		current = current->getParent();
-	}
-}
-
-std::shared_ptr<GameState> GameState::getParent(){
-	return this->parent;
-} 
-
-std::shared_ptr<GameState> GameState::select(int cpuct){
+std::shared_ptr<GameState> GameState::select(float cpuct){
 	std::shared_ptr<GameState> current = shared_from_this();
 	int action;
-	ArrayXf puct/*, q, u*/;
 	
 	while (current->isExpanded and not current->game->ended()){
-		/*q = current->childQ();
-		u = current->childU(cpuct);
-		*/
-		puct = current->childQ() + current->childU(cpuct);
-		action = current->getBestAction(puct);
-		
-		/*std::cout << "puct" << puct<< std::endl;
-		std::cout << "puct q" << q<< std::endl;
-		std::cout << "puct u" << u<< std::endl;
-		std::cout << "puct action" << action<< std::endl;
-		*/
+		action = current->getBestAction(cpuct);
 		current = current->play(action);
 	}
 
 	return current;
 }
 
-int GameState::getBestAction(ArrayXf puct){
+void GameState::expand(ArrayXf p, float dirichlet_alpha){
+	this->isExpanded = true;
 	ArrayXf poss = this->game->getPossibleActions();
+
+	if (!this->parent->parent){
+		ArrayXf alpha = ArrayXf::Ones(p.size())*dirichlet_alpha;
+		ArrayXf d = dirichlet_distribution(alpha);
+		p = 0.75*p + 0.25*d;
+	}
+
+	this->childP = this->getValidActions(p, poss);
+}
+
+void GameState::backup(float v){
+	std::shared_ptr<GameState> current = shared_from_this();
+	while (current->parent){
+		current->incN();
+		current->updateW(v);
+		current = current->parent;
+		v *= -1;
+	}
+}
+
+void GameState::addVirtualLoss(){
+	std::shared_ptr<GameState> current = shared_from_this();
+
+	while (current->parent){
+		current->updateW(1);
+		current = current->parent;
+	}
+}
+
+void GameState::removeVirtualLoss(){
+	std::shared_ptr<GameState> current = shared_from_this();
+
+	while (current->parent){
+		current->updateW(-1);
+		current = current->parent;
+	}
+}
+
+
+int GameState::getBestAction(float cpuct){
+	ArrayXf puct = this->childQ() + this->childU(cpuct);
+	ArrayXf poss = this->game->getPossibleActions();
+	
 	float max = std::numeric_limits<float>::lowest();
 	int action = -1;
 
@@ -100,16 +111,7 @@ std::shared_ptr<GameState> GameState::play(int action){
 	return this->children[action];
 }
 
-void GameState::backup(float v){
-	std::shared_ptr<GameState> current = shared_from_this();
-	while (current->getParent()){
-		current->incN();
-		current->updateW(v);
-		current = current->getParent();
-		v *= -1;
-	}
-		std::cout<<"fim backup"<<std::endl;
-}
+
 
 void GameState::updateW(float v){
 	this->parent->childW[this->action] += v;
@@ -157,24 +159,6 @@ ArrayXf GameState::dirichlet_distribution(ArrayXf alpha){
 } 
 
 
-void GameState::expand(ArrayXf p, float dirichlet_alpha){
-	this->isExpanded = true;
-	
-	ArrayXf poss = this->game->getPossibleActions();
-
-	if (!this->parent->parent){
-		ArrayXf alpha = ArrayXf::Ones(p.size())*dirichlet_alpha;
-		ArrayXf d = dirichlet_distribution(alpha);
-		p = 0.75*p + 0.25*d;
-	}
-
-	this->childP = this->getValidActions(p, poss);
-
-	//std::cout << "p inside " << p << std::endl;
-	//std::cout << "poss " << poss << std::endl;
-	//std::cout << "childp" << this->childP << std::endl;
-}
-
 ArrayXf GameState::getValidActions(ArrayXf pred, ArrayXf poss){
 	ArrayXf valid_actions = (pred * poss);
 
@@ -186,16 +170,7 @@ ArrayXf GameState::getValidActions(ArrayXf pred, ArrayXf poss){
 }
 
 ArrayXf GameState::getSearchPolicy(float temp){
-	/*std::cout << "W" << std::endl;
-	std::cout << childW << std::endl;
-	std::cout << "N" << std::endl;
-	std::cout << childN << std::endl;
-	std::cout << "P" << std::endl;
-	std::cout << childP << std::endl;*/
 	ArrayXf count = pow(this->childN,1/temp);
-	//std::cout << "childN " << this->childN << std::endl;
-	//std::cout << "count " << count << std::endl;
-	//std::cout << "count.sum " << count.sum()<< std::endl;
 	return count/count.sum();
 }
 
@@ -221,8 +196,8 @@ std::vector<MatrixXf> GameState::getNetworkInput(){
 	game_state.insert(game_state.begin(), current->getCanonicalBoard());
 
 	for(int i = 0; i < this->game->getInputPlanes() - 1; i++){
-		if (current->getParent()){
-			current =  current->getParent();
+		if (current->parent){
+			current =  current->parent;
 			game_state.insert(game_state.begin(), current->getCanonicalBoard());
 		}
 		else{
@@ -231,4 +206,11 @@ std::vector<MatrixXf> GameState::getNetworkInput(){
 	
 	}
 	return game_state;
+}
+
+std::shared_ptr<GameState> getChild(int action){
+	if (this->children[action]){
+		std::shared_ptr<GameState> fakeparentparent;
+		this->children->parent->parent = fakeparentparent;
+	}
 }
