@@ -208,9 +208,13 @@ std::vector<MatrixXf> GameState::getNetworkInput(){
 	return game_state;
 }
 
-std::shared_ptr<GameState> getChild(int action){
-	if (this->children[action]){
-		std::shared_ptr<GameState> fakeparentparent;
-		this->children->parent->parent = fakeparentparent;
-	}
+
+std::shared_ptr<GameState> GameState::getChild(int action){
+	std::shared_ptr<GameState> fakeparentparent;
+	std::shared_ptr<GameState> fakeparent = std::make_shared<GameState>(this->game, 0, fakeparentparent); 	
+	
+	std::shared_ptr<GameState> child = this->play(action);
+	child->parent = fakeparent; 
+
+	return child;
 }

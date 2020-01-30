@@ -32,7 +32,6 @@ class GameState : public std::enable_shared_from_this<GameState>
 		int getBestAction(float cpuct);
 		std::shared_ptr<GameState> play(int action);
 		ArrayXf dirichlet_distribution(ArrayXf alpha);
-		MatrixXf getCanonicalBoard();
 		
 	public:
 		GameState(std::shared_ptr<Game> game, int action, std::shared_ptr<GameState> parent);
@@ -52,6 +51,7 @@ class GameState : public std::enable_shared_from_this<GameState>
 		bool getWinner();
 
 		std::vector<MatrixXf> getNetworkInput();
+		MatrixXf getCanonicalBoard();
 
 		std::shared_ptr<GameState> getChild(int action);
 };

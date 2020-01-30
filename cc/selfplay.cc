@@ -43,7 +43,9 @@ void play_game(std::shared_ptr<Game> n_game, NNWrapper& model, int count, int te
     	5, // n_simulations
     	0.1, //temp
     };
-    
+
+    std::shared_ptr<GameState> gs =  std::make_shared<GameState>(game);
+
 	int action;
 	ArrayXf p;
 	int game_length = 0;
@@ -59,7 +61,7 @@ void play_game(std::shared_ptr<Game> n_game, NNWrapper& model, int count, int te
     	history.push_back(b_v);
 
     	//simulate
-		p = MCTS::simulate(game, model, mcts);
+		p = MCTS::simulate(gs, model, mcts);
 
 		//save probability
     	std::vector<float> p_v(p.data(), p.data() + p.size());
@@ -71,6 +73,9 @@ void play_game(std::shared_ptr<Game> n_game, NNWrapper& model, int count, int te
     	game->play(action);
     	game_length++;
     	
+    	gs = gs->getChild(action);
+    	
+
     	if (game_length > tempthreshold){
     		mcts.temp = 1.5;
     	}
