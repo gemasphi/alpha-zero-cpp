@@ -26,6 +26,17 @@ GameState::GameState(std::shared_ptr<Game> game){
 	this->game = game;
 }
 
+std::ostream& operator<<(std::ostream& os, const GameState& gs)
+{
+    os  << "Child N\n" << gs.childN  << std::endl
+    	<< "Child Q\n" << gs.childP  << std::endl
+    	<< "Child W\n" << gs.childW  << std::endl
+    	<< "Action" << gs.action 
+    	<< "Board\n" << gs.game->getBoard() << std::endl;
+    
+    return os;
+}
+
 std::shared_ptr<GameState> GameState::select(float cpuct){
 	std::shared_ptr<GameState> current = shared_from_this();
 	int action;

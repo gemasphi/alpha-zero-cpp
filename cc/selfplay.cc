@@ -40,7 +40,7 @@ void play_game(std::shared_ptr<Game> n_game, NNWrapper& model, int count, int te
     MCTS::Config mcts = { 
     	2, //cpuct 
     	1, //dirichlet_alpha
-    	5, // n_simulations
+    	25, // n_simulations
     	0.1, //temp
     };
 
@@ -74,7 +74,7 @@ void play_game(std::shared_ptr<Game> n_game, NNWrapper& model, int count, int te
     	game_length++;
     	
     	gs = gs->getChild(action);
-    	
+    	std::cout << *gs << std::endl;
 
     	if (game_length > tempthreshold){
     		mcts.temp = 1.5;

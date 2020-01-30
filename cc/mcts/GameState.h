@@ -37,6 +37,8 @@ class GameState : public std::enable_shared_from_this<GameState>
 		GameState(std::shared_ptr<Game> game, int action, std::shared_ptr<GameState> parent);
 		GameState(std::shared_ptr<Game> game); //root node constructor
 		
+		friend std::ostream& operator<<(std::ostream& os, const GameState& gs);
+		
 		void addVirtualLoss();
 		void removeVirtualLoss();
 		
