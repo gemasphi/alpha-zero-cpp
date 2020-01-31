@@ -22,6 +22,7 @@ target_link_libraries(game_info game)
 set(BASE_LIBRARIES 
 	OpenMP::OpenMP_CXX 
 	-lstdc++fs
+	-fopenmp
 	game 
 	mcts 
 	player 

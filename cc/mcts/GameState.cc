@@ -12,6 +12,7 @@ GameState::GameState(std::shared_ptr<Game> game, int action, std::shared_ptr<Gam
 	this->childP = ArrayXf::Zero(game->getActionSize());
 	this->childN = ArrayXf::Zero(game->getActionSize());
 	this->game = game;
+	omp_init_lock(&this->writelock);
 }
 
 GameState::GameState(std::shared_ptr<Game> game){
@@ -24,6 +25,7 @@ GameState::GameState(std::shared_ptr<Game> game){
 	this->childP = ArrayXf::Zero(game->getActionSize());
 	this->childN = ArrayXf::Zero(game->getActionSize());
 	this->game = game;
+	omp_init_lock(&this->writelock);
 }
 
 std::ostream& operator<<(std::ostream& os, const GameState& gs)
@@ -50,6 +52,8 @@ std::shared_ptr<GameState> GameState::select(float cpuct){
 }
 
 void GameState::expand(ArrayXf p, float dirichlet_alpha){
+	omp_set_lock(&(this->writelock));
+
 	this->isExpanded = true;
 	ArrayXf poss = this->game->getPossibleActions();
 
@@ -60,30 +64,40 @@ void GameState::expand(ArrayXf p, float dirichlet_alpha){
 	}
 
 	this->childP = this->getValidActions(p, poss);
+	
+	omp_unset_lock(&(this->writelock));
 }
 
 void GameState::backup(float v, int n){
 	std::shared_ptr<GameState> current = shared_from_this();
 	while (current->parent){
+		omp_set_lock(&(this->writelock));
 		current->updateN(n);
 		current->updateW(v);
 		current = current->parent;
 		v *= -1;
+		omp_unset_lock(&(this->writelock));
 	}
 }
 
 void GameState::addVirtualLoss(int vloss){
-	this->backup(vloss, 1);
+	omp_set_lock(&(this->writelock));
+	this->isExpanded = true;
+	omp_unset_lock(&(this->writelock));
+
+	this->backup(-vloss, 1);
 }
 
 void GameState::removeVirtualLoss(int vloss){
-	this->backup(-vloss, -1);
+	this->backup(vloss, -1);
 }
 
 int GameState::getBestAction(float cpuct){
+	omp_set_lock(&(this->writelock));
+
 	ArrayXf puct = this->childQ() + this->childU(cpuct);
 	ArrayXf poss = this->game->getPossibleActions();
-	
+	//std::cout << "puct" << puct << std::endl;
 	float max = std::numeric_limits<float>::lowest();
 	int action = -1;
 
@@ -97,10 +111,14 @@ int GameState::getBestAction(float cpuct){
 	}
 	
 	assert(action != -1);			
+	omp_unset_lock(&(this->writelock));
+
 	return action;			
 }
 
 std::shared_ptr<GameState> GameState::play(int action){
+	omp_set_lock(&(this->writelock));
+
 	if (!this->children[action]){
 		std::shared_ptr<Game> t = std::move(this->game->copy());
 		t->play(action);
@@ -108,6 +126,7 @@ std::shared_ptr<GameState> GameState::play(int action){
 		this->children[action] = std::make_shared<GameState>(t, action, shared_from_this()); 
 	}
 
+	omp_unset_lock(&(this->writelock));
 	return this->children[action];
 }
 
@@ -212,7 +231,7 @@ std::shared_ptr<GameState> GameState::getChild(int action){
 	std::shared_ptr<GameState> fakeparent = std::make_shared<GameState>(this->game, 0, fakeparentparent); 	
 	
 	std::shared_ptr<GameState> child = this->play(action);
-	child->parent = fakeparent; 
+	//child->parent = fakeparent; TODO: we currently don't destroy the tree, because of problems when forming network input 
 
 	return child;
 }

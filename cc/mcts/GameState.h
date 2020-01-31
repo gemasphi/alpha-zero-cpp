@@ -8,7 +8,8 @@
 #include <Eigen/Core>
 #include <memory>
 #include <limits>  
-#include <random>     
+#include <random>   
+#include <omp.h>  
 using namespace Eigen;
 
 class GameState : public std::enable_shared_from_this<GameState>
@@ -22,6 +23,8 @@ class GameState : public std::enable_shared_from_this<GameState>
 		ArrayXf childW;
 		ArrayXf childP;
 		ArrayXf childN;
+
+		omp_lock_t writelock; //TODO: not freed rn
 
 		void updateW(float v);
 		void updateN(int n);

@@ -61,7 +61,7 @@ void play_game(std::shared_ptr<Game> n_game, NNWrapper& model, int count, int te
     	history.push_back(b_v);
 
     	//simulate
-		p = MCTS::simulate(gs, model, mcts);
+		p = MCTS::parallel_simulate(gs, model, mcts);
 
 		//save probability
     	std::vector<float> p_v(p.data(), p.data() + p.size());
@@ -74,7 +74,6 @@ void play_game(std::shared_ptr<Game> n_game, NNWrapper& model, int count, int te
     	game_length++;
     	
     	gs = gs->getChild(action);
-    	std::cout << *gs << std::endl;
 
     	if (game_length > tempthreshold){
     		mcts.temp = 1.5;
@@ -128,7 +127,7 @@ int main(int argc, char** argv){
 	int n_games = std::stoi(argv[3]);
 
 	std::cout << "n games:" << n_games<< std::endl;
-//	#pragma omp parallel
+	#pragma omp parallel
 	{	
 	int i = 0;
 	int count = 1;
@@ -150,9 +149,9 @@ int main(int argc, char** argv){
 			std::cout << "i:" << i<< std::endl;
 
 			count++;
-			/*if (n_games > 0 && i == n_games){
+			if (n_games > 0 && i == n_games){
 				break;
-			}*/
+			}
 		}
 	}
 	return 0;

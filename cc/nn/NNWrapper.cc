@@ -23,6 +23,19 @@ NN::Output NNWrapper::maybeEvaluate(std::shared_ptr<GameState> leaf){
 
 }
 
+std::vector<NN::Output> NNWrapper::maybeEvaluate(std::vector<std::shared_ptr<GameState>> leafs){
+	std::vector<std::vector<MatrixXf>> _boards;
+
+	for (auto leaf: leafs){
+		_boards.push_back(leaf->getNetworkInput());
+	}	
+
+	std::vector<NN::Output> res 
+		= this->predict(NN::Input(_boards));
+
+	return res;
+}
+
 NNWrapper::NNWrapper(std::string filename){
 	try {
 		std::cout << "loading the model\n";

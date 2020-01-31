@@ -23,7 +23,9 @@ class NNWrapper{
 		NNWrapper(std::string filename);
 		std::vector<NN::Output> predict(NN::Input input);
 		NN::Output maybeEvaluate(std::shared_ptr<GameState> leaf);
+		std::vector<NN::Output> maybeEvaluate(std::vector<std::shared_ptr<GameState>> leafs);
 		void reload(std::string filename);
+
 		
 };
 

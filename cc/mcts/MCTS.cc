@@ -28,44 +28,51 @@ ArrayXf MCTS::simulate(std::shared_ptr<Game> game, NNWrapper& model, MCTS::Confi
 	return simulate(std::make_shared<GameState>(game), model, cfg);
 }
 
-/*
-ArrayXf threaded_simulate(std::shared_ptr<GameState> root, NNWrapper& model, float temp = 1, int n_simulations = 5){
+
+ArrayXf MCTS::parallel_simulate(std::shared_ptr<GameState> root, NNWrapper& model, MCTS::Config cfg){
 	int eval_size = 4;
-	int simulations_to_run = n_simulations / eval_size; 
-	std::vector<GameState> leafs;
+	int simulations_to_run = cfg.n_simulations / eval_size; 
 	//we do more than the n_simulations currently
 	
-	for(int i = 0; i < 5 + 1; i++){
-		#pragma omp parallel
+	for(int i = 0; i < simulations_to_run; i++){
+		std::vector<std::shared_ptr<GameState>> leafs;
+		
+		#pragma omp parallel num_threads(4)
 		{
-			GameState leaf = root->select(this->cpuct);
-
+		//	std::cout << "selecting " << "from me" << omp_get_thread_num() << std::endl;
+			std::shared_ptr<GameState> leaf = root->select(cfg.cpuct);
+		//	std::cout << leaf << "from me" << omp_get_thread_num() << std::endl;
 			if (leaf->endGame()){
 				leaf->backup(leaf->getWinner());
-				continue;
 			}
-
-			leaf->addVirtualLoss();
-			leafs.push_back(leaf);
+			else{
+		//		std::cout << "adding virutal loss" << omp_get_thread_num() << std::endl;
+				leaf->addVirtualLoss(1);
+		//		std::cout << "beep" << omp_get_thread_num() << std::endl;
+				
+				#pragma omp critical
+				leafs.push_back(leaf);
+			}
 		}
-
-		if (leafs.size == 0){
+	//	std::cout << leafs << std::endl;
+		if (leafs.size() == 0){
 			break;
 		}
 		
-		NN::Output output = model.predict(leafs); 
-			#pragma omp for
-			{
-				for (NN::Output o& : output){
-				leaf.remove_virtual_loss();
-				leaf.expand(o.p, dirichlet_alpha);
-				leaf.backup(o.v);
-				}
+		std::vector<NN::Output> res = model.maybeEvaluate(leafs);
+
+		#pragma omp parallel for
+		for(int i = 0; i < leafs.size(); i++){
+			leafs[i]->removeVirtualLoss(1);
+			leafs[i]->expand(res[i].policy, cfg.dirichlet_alpha);
+			leafs[i]->backup(res[i].value);
 		}
+
 	}
-	return root->getSearchPolicy(temp);
+
+	return root->getSearchPolicy(cfg.temp);
 }
-	*/
+	
 
 
 
