@@ -22,11 +22,17 @@ namespace MCTS
 		float dirichlet_alpha = 1;
 		float n_simulations = 25;
 		float temp = 1;
+
+		//for parallel simulate
+		float vloss = 1;
+		int num_threads = 4;
 	};
 
 	ArrayXf simulate(std::shared_ptr<Game> game, NNWrapper& model, MCTS::Config cfg);
 	ArrayXf simulate(std::shared_ptr<GameState> root, NNWrapper& model, MCTS::Config cfg);
 	ArrayXf parallel_simulate(std::shared_ptr<GameState> root, NNWrapper& model, MCTS::Config cfg);
+	ArrayXf parallel_simulate(std::shared_ptr<Game> game, NNWrapper& model, MCTS::Config cfg);
+
 }
 
 #endif 

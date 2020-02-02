@@ -74,9 +74,10 @@ class AlphaZeroPlayer : public ProbabilisticPlayer
 	private:
 		NNWrapper& nn;
 		MCTS::Config mcts;
+		bool parallel;
 
 	public:
-		AlphaZeroPlayer(NNWrapper& nn, MCTS::Config mcts);
+		AlphaZeroPlayer(NNWrapper& nn, MCTS::Config mcts, bool parallel  = true);
 		int getAction(std::shared_ptr<Game> game);
 		int getAction(std::shared_ptr<Game> game, bool deterministc);
 };

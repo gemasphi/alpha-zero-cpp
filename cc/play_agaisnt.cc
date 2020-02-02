@@ -68,6 +68,39 @@ namespace Match{
 }
 
 
+void save_matches(
+	std::vector<Match::Result> results, 
+	std::string id,
+	int p1_wins, 
+	int draws,
+	int p2_wins, 
+	std::string directory = "./temp/playagaisnt_games/"
+	){
+	
+	std::time_t t = std::time(0); 
+
+	if (!fs::exists(directory)){
+		std::cout
+			<< "Directory " 
+			<< directory 
+			<< " didn't exist. Creating it..." 
+			<< std::endl;
+		fs::create_directories(directory);
+	}
+
+	json matches = json{
+		{"id", id}, 
+		{"results", results}, 
+		{"p1_wins", p1_wins}, 
+		{"draws", draws}, 
+		{"p2_wins", p2_wins}, 
+	};
+
+	std::ofstream o(directory + "matches_" + std::to_string(t));
+	o << matches.dump() << std::endl;
+}
+
+
 Match::Result play_game(Match::Info m, bool print = false){
 	std::shared_ptr<Game> game = m.game.copy();
 	ProbabilisticPlayer& p1 = m.p1;
@@ -107,40 +140,6 @@ Match::Result play_game(Match::Info m, bool print = false){
 	return result;
 }
 
-
-
-void save_matches(
-	std::vector<Match::Result> results, 
-	std::string id,
-	int p1_wins, 
-	int draws,
-	int p2_wins, 
-	std::string directory = "./temp/playagaisnt_games/"
-	){
-	
-	std::time_t t = std::time(0); 
-
-	if (!fs::exists(directory)){
-		std::cout
-			<< "Directory " 
-			<< directory 
-			<< " didn't exist. Creating it..." 
-			<< std::endl;
-		fs::create_directories(directory);
-	}
-
-	json matches = json{
-		{"id", id}, 
-		{"results", results}, 
-		{"p1_wins", p1_wins}, 
-		{"draws", draws}, 
-		{"p2_wins", p2_wins}, 
-	};
-
-	std::ofstream o(directory + "matches_" + std::to_string(t));
-	o << matches.dump() << std::endl;
-}
-
 void player_vs_player(std::string id, Match::Info m, int n_games = 1){
 	int p1_wins = 0;
 	int draws = 0;
@@ -173,7 +172,7 @@ int main(int argc, char** argv){
 	AlphaZeroPlayer p1 = AlphaZeroPlayer(nn, mcts);
 	
 	NNWrapper nn2 = NNWrapper(argv[5]);
-	AlphaZeroPlayer p2 = AlphaZeroPlayer(nn2, mcts);
+	AlphaZeroPlayer p2 = AlphaZeroPlayer(nn2, mcts, false);
 	//NNPlayer p1 = NNPlayer(nn);
 	//NNPlayer p2 = NNPlayer(nn2);
 	//HumanPlayer p1 = HumanPlayer();
