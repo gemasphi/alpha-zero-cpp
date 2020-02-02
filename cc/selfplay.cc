@@ -123,15 +123,15 @@ void play_perfectly(std::shared_ptr<Game> n_game, Player& perfectPlayer){
 }
 int main(int argc, char** argv){
 	std::shared_ptr<Game> g = Game::create(argv[1]);
-	int RELOAD_MODEL = 3;
 	int n_games = std::stoi(argv[3]);
 
 	std::cout << "n games:" << n_games<< std::endl;
+	NNWrapper model = NNWrapper(argv[2]);
+	
 	#pragma omp parallel
 	{	
 	int i = 0;
 	int count = 1;
-	NNWrapper model = NNWrapper(argv[2]);
 		while (true){
 			play_game(g, model, count);
 			auto now = std::chrono::system_clock::now();
@@ -139,12 +139,7 @@ int main(int argc, char** argv){
 			
 			std::cout<< std::ctime(&now_time) <<" Game Generated" << std::endl;
 
-			
-			if ((i % RELOAD_MODEL == 0) && (i != 0) && n_games == -1 ){
-				model.reload(argv[2]);
-				std::cout<<"Model Updated" << std::endl;
-			} 
-			
+		
 			i++;
 			std::cout << "i:" << i<< std::endl;
 
