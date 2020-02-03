@@ -128,26 +128,26 @@ int main(int argc, char** argv){
 	std::cout << "n games:" << n_games<< std::endl;
 	NNWrapper model = NNWrapper(argv[2]);
 	
-	//#pragma omp parallel
+	#pragma omp parallel
 	{	
 	int i = 0;
-	int count = 1;
-		while (true){
-			play_game(g, model, count);
-			auto now = std::chrono::system_clock::now();
-			std::time_t now_time = std::chrono::system_clock::to_time_t(now);
-			
-			std::cout<< std::ctime(&now_time) <<" Game Generated" << std::endl;
+	while (true){
+		play_game(g, model, i + 1);
 
-		
-			i++;
-			std::cout << "i:" << i<< std::endl;
+		auto now = std::chrono::system_clock::now();
+		std::time_t now_time = std::chrono::system_clock::to_time_t(now);
+		std::cout<< std::ctime(&now_time) <<" Game Generated" << std::endl;
 
-			count++;
-			if (n_games > 0 && i == n_games){
-				break;
-			}
+		#pragma omp critical
+		{
+			model.shouldLoad(argv[2]);
+		}		
+
+		i++;
+		if (n_games > 0 && i == n_games){
+			break;
 		}
+	}
 	}
 	return 0;
 }

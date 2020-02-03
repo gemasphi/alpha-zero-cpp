@@ -12,7 +12,6 @@ add_subdirectory(${CMAKE_SOURCE_DIR}/games)
 add_subdirectory(${CMAKE_SOURCE_DIR}/nn)
 add_subdirectory(${CMAKE_SOURCE_DIR}/mcts)
 add_subdirectory(${CMAKE_SOURCE_DIR}/player)
-add_subdirectory(${CMAKE_SOURCE_DIR}/tests)
 
 
 

@@ -3,59 +3,23 @@
 using namespace Eigen;
 
 
-void setScheduling(std::thread &th, int policy, int priority) {
-	sched_param sch_params;
-    sch_params.sched_priority = priority;
-    if(pthread_setschedparam(th.native_handle(), policy, &sch_params)) {
-        std::cerr << "Failed to set Thread scheduling : " << std::strerror(errno) << std::endl;
-    }
-}
-
-NNWrapper::NNWrapper(std::string filename, bool watchFile){
-	this->watchFile = watchFile;
-
-	if (watchFile){
-		this->fileWatcher = std::thread(&NNWrapper::setup_inotify, this, filename);
-		//setScheduling(this->fileWatcher, SCHED_RR, 99);
-	}
-	
+NNWrapper::NNWrapper(std::string filename) {
+	//this->observer = 
+	//	 std::make_unique<NNObserver>(*this, filename, watchFile);;  
 	this->load(filename);
 }
 	
+void NNWrapper::shouldLoad(std::string filename){
+	fs::file_time_type last_update = fs::last_write_time(filename);
 
-NNWrapper::~NNWrapper(){
-	if (this->watchFile){
-		close(this->inotifyFD);
-		this->fileWatcher.join();
+	if (this->modelLastUpdate != last_update){
+		this->load(filename);
 	}
-}
-
-//todo: error handling
-void NNWrapper::setup_inotify(std::string file){
-	this->inotifyFD = inotify_init();
-	inotify_add_watch(this->inotifyFD, file.c_str(), IN_ATTRIB | IN_MODIFY | IN_CREATE | IN_DELETE );
-
-	int buff_size = ( 1024 * ( sizeof (struct inotify_event) + NAME_MAX + 1) );
-	char buffer[ buff_size ];
-	
-	fd_set watch_set;
-    FD_ZERO( &watch_set );
-    FD_SET( this->inotifyFD, &watch_set );
-
-	while(fcntl(this->inotifyFD, F_GETFD) != -1) {
-		struct timeval tv = {5, 0};   
-		if(select( this->inotifyFD+1, &watch_set, NULL, NULL, &tv) == 1){
-			std::unique_lock lock(this->modelMutex);
-			std::cout << "New model detected" << std::endl;
-			int length = read( this->inotifyFD, buffer, buff_size ); 
-			this->load(file);
-			lock.unlock();
-	    }
-	}
-
-	std::cout<<"dead" << std::endl;
-}
-
+}	
+/*
+std::shared_mutex* NNWrapper::getModelMutex(){
+	return &(this->modelMutex);
+}*/
 
 NN::Output NNWrapper::maybeEvaluate(std::shared_ptr<GameState> leaf){
 	std::stringstream ss;
@@ -104,20 +68,19 @@ void NNWrapper::inserInCache(std::string board, NN::Output o){
 }
 
 void NNWrapper::load(std::string filename){
-
+	std::unique_lock lock(this->modelMutex);
 	try {
-
 		std::cout << "loading the model\n";
 		this->module = torch::jit::load(filename, torch::kCPU);
+		this->modelLastUpdate = fs::last_write_time(filename);
 		netCache = std::unordered_map<std::string, NN::Output>();
 		std::cout << "model loaded\n";
-
-		
 	}
 	catch (const c10::Error& e) {
 		std::cout << "error reloading the model, using old model\n";
 	}
 
+	lock.unlock();
 }
 
 std::vector<NN::Output> NNWrapper::predict(NN::Input input){

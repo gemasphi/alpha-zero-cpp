@@ -7,39 +7,40 @@
 #include <torch/script.h>
 #include "NNUtils.h"
 #include <GameState.h>
+//#include "NNObserver.h"
 
-#include <sys/inotify.h>
-#include <fcntl.h>
-
+#include <experimental/filesystem>
 #include <mutex>  
 #include <shared_mutex>
-#include <thread>
-#include <pthread.h>
+
 
 using namespace Eigen;
+namespace fs = std::experimental::filesystem;
+
+//class NNObserver;   //forward declaration
 
 class NNWrapper{
 	private:
 		torch::jit::script::Module module;
 		std::unordered_map<std::string, NN::Output> netCache;
 		
-		bool watchFile;
-		std::thread fileWatcher;
+		fs::file_time_type modelLastUpdate;
 		mutable std::shared_mutex modelMutex;
-		int inotifyFD; 
-
+		//std::unique_ptr<NNObserver> observer; 
+		
 		bool inCache(std::string board);
 		NN::Output getCachedEl(std::string board);
 		void inserInCache(std::string board, NN::Output o);
-		void setup_inotify(std::string directory);
+		void load(std::string filename);
 
 	public:
-		NNWrapper(std::string filename, bool watchFile = true);
-		~NNWrapper(); 
-		std::vector<NN::Output> predict(NN::Input input);
+		NNWrapper(std::string filename);
 		NN::Output maybeEvaluate(std::shared_ptr<GameState> leaf);
 		std::vector<NN::Output> maybeEvaluate(std::vector<std::shared_ptr<GameState>> leafs);
-		void load(std::string filename);
+		std::vector<NN::Output> predict(NN::Input input);
+
+		//std::shared_mutex* getModelMutex();
+		void shouldLoad(std::string filename);
 
 		
 };
