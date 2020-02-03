@@ -78,3 +78,4 @@ if(NOT connect4solver_POPULATED)
 endif()
 
 FILE(GLOB CONNECT_SOLVER_CPP  "${connect4solver_SOURCE_DIR}/*.cpp")
+list(REMOVE_ITEM CONNECT_SOLVER_CPP "${connect4solver_SOURCE_DIR}/main.cpp")

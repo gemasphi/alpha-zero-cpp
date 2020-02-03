@@ -2,32 +2,58 @@
 
 using namespace Eigen;
 
-#define EVENT_SIZE          ( sizeof (struct inotify_event) )
-#define EVENT_BUF_LEN       ( 1024 * ( EVENT_SIZE + NAME_MAX + 1) )
+
+void setScheduling(std::thread &th, int policy, int priority) {
+	sched_param sch_params;
+    sch_params.sched_priority = priority;
+    if(pthread_setschedparam(th.native_handle(), policy, &sch_params)) {
+        std::cerr << "Failed to set Thread scheduling : " << std::strerror(errno) << std::endl;
+    }
+}
+
+NNWrapper::NNWrapper(std::string filename, bool watchFile){
+	this->watchFile = watchFile;
+
+	if (watchFile){
+		this->fileWatcher = std::thread(&NNWrapper::setup_inotify, this, filename);
+		//setScheduling(this->fileWatcher, SCHED_RR, 99);
+	}
+	
+	this->load(filename);
+}
+	
+
+NNWrapper::~NNWrapper(){
+	if (this->watchFile){
+		close(this->inotifyFD);
+		this->fileWatcher.join();
+	}
+}
 
 //todo: error handling
 void NNWrapper::setup_inotify(std::string file){
-	int fd = inotify_init();
-	int wd = inotify_add_watch(fd, file.c_str(), IN_ATTRIB | IN_MODIFY | IN_CREATE | IN_DELETE );
+	this->inotifyFD = inotify_init();
+	inotify_add_watch(this->inotifyFD, file.c_str(), IN_ATTRIB | IN_MODIFY | IN_CREATE | IN_DELETE );
 
-	char buffer[ EVENT_BUF_LEN ];
+	int buff_size = ( 1024 * ( sizeof (struct inotify_event) + NAME_MAX + 1) );
+	char buffer[ buff_size ];
 	
 	fd_set watch_set;
     FD_ZERO( &watch_set );
-    FD_SET( fd, &watch_set );
+    FD_SET( this->inotifyFD, &watch_set );
 
-	while(fcntl(fd, F_GETFD) != -1) {
-		//if (terminateFileWatcher) return;
-		
-		std::cout << "wacthcing" << std::endl;
-		if(select( fd+1, &watch_set, NULL, NULL, NULL ) == 1){
-			int length = read( fd, buffer, EVENT_BUF_LEN ); 
+	while(fcntl(this->inotifyFD, F_GETFD) != -1) {
+		struct timeval tv = {5, 0};   
+		if(select( this->inotifyFD+1, &watch_set, NULL, NULL, &tv) == 1){
+			std::unique_lock lock(this->modelMutex);
+			std::cout << "New model detected" << std::endl;
+			int length = read( this->inotifyFD, buffer, buff_size ); 
 			this->load(file);
+			lock.unlock();
 	    }
 	}
-	
-	//close (fd); 
-	//std::cout << "close" << std::endl;
+
+	std::cout<<"dead" << std::endl;
 }
 
 
@@ -64,14 +90,6 @@ std::vector<NN::Output> NNWrapper::maybeEvaluate(std::vector<std::shared_ptr<Gam
 	return res;
 }
 
-NNWrapper::NNWrapper(std::string filename){
-	omp_init_lock(&this->modelock);
-
-	this->fileWatcher = std::thread(&NNWrapper::setup_inotify, this, filename);
-	this->load(filename);
-}
-	
-
 
 bool NNWrapper::inCache(std::string board){
 	return this->netCache.find(board) != this->netCache.end();
@@ -88,13 +106,13 @@ void NNWrapper::inserInCache(std::string board, NN::Output o){
 void NNWrapper::load(std::string filename){
 
 	try {
+
 		std::cout << "loading the model\n";
-		omp_set_lock(&(this->modelock));
-			this->module = torch::jit::load(filename, torch::kCPU);
-		omp_unset_lock(&(this->modelock));
-		
+		this->module = torch::jit::load(filename, torch::kCPU);
 		netCache = std::unordered_map<std::string, NN::Output>();
 		std::cout << "model loaded\n";
+
+		
 	}
 	catch (const c10::Error& e) {
 		std::cout << "error reloading the model, using old model\n";
@@ -106,10 +124,10 @@ std::vector<NN::Output> NNWrapper::predict(NN::Input input){
 	std::vector<torch::jit::IValue> jit_inputs;
 	jit_inputs.push_back(input.boards.to(at::kCPU));
 	
-	//omp_set_lock(&(this->modelock));
+	std::shared_lock lock(this->modelMutex);
 	torch::jit::IValue output = this->module.forward(jit_inputs);
-	//omp_unset_lock(&(this->modelock));
-	
+	lock.unlock();
+
 	std::vector<NN::Output> o;
 
 	for(int i = 0; i < input.batch_size; i++){

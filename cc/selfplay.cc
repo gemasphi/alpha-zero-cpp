@@ -128,7 +128,7 @@ int main(int argc, char** argv){
 	std::cout << "n games:" << n_games<< std::endl;
 	NNWrapper model = NNWrapper(argv[2]);
 	
-	#pragma omp parallel
+	//#pragma omp parallel
 	{	
 	int i = 0;
 	int count = 1;

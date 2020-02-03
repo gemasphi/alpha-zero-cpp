@@ -11,8 +11,10 @@
 #include <sys/inotify.h>
 #include <fcntl.h>
 
+#include <mutex>  
+#include <shared_mutex>
 #include <thread>
-//#include <atomic>
+#include <pthread.h>
 
 using namespace Eigen;
 
@@ -21,8 +23,10 @@ class NNWrapper{
 		torch::jit::script::Module module;
 		std::unordered_map<std::string, NN::Output> netCache;
 		
+		bool watchFile;
 		std::thread fileWatcher;
-		omp_lock_t modelock; //TODO: not freed rn
+		mutable std::shared_mutex modelMutex;
+		int inotifyFD; 
 
 		bool inCache(std::string board);
 		NN::Output getCachedEl(std::string board);
@@ -30,7 +34,8 @@ class NNWrapper{
 		void setup_inotify(std::string directory);
 
 	public:
-		NNWrapper(std::string filename);
+		NNWrapper(std::string filename, bool watchFile = true);
+		~NNWrapper(); 
 		std::vector<NN::Output> predict(NN::Input input);
 		NN::Output maybeEvaluate(std::shared_ptr<GameState> leaf);
 		std::vector<NN::Output> maybeEvaluate(std::vector<std::shared_ptr<GameState>> leafs);
