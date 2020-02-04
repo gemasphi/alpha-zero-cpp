@@ -25,13 +25,38 @@ namespace Selfplay{
     		0.1, //temp
     	};
 	};
+
+	struct Result
+	{
+		std::vector<std::vector<float>> probabilities;
+		std::vector<std::vector<std::vector<float>>> history;
+
+		Result(){};
+
+		void addBoardProbs(MatrixXf game_b, ArrayXf p){
+			this->addBoard(game_b);
+			this->addProbability(p);
+		}
+
+		void addBoard(MatrixXf game_b){
+			Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> board(game_b);
+			std::vector<std::vector<float>> b_v;
+	    	for (int i=0; i<board.rows(); ++i){
+	    		b_v.push_back(std::vector<float>(board.row(i).data(), board.row(i).data() + board.row(i).size()));
+	    	}
+	    	this->history.push_back(b_v);
+		}
+
+		void addProbability(ArrayXf p){
+	    	std::vector<float> p_v(p.data(), p.data() + p.size());
+	    	this->probabilities.push_back(p_v);
+		}
+
+	};
 }
 
 
-void save_game(std::shared_ptr<Game> game, 
-	std::vector<std::vector<float>> probabilities, 
-	std::vector<std::vector<std::vector<float>>> history
-	){
+void save_game(std::shared_ptr<Game> game, Selfplay::Result res){
 	std::string directory = "./temp/games/";
 	std::time_t t = std::time(0); 
 
@@ -42,11 +67,19 @@ void save_game(std::shared_ptr<Game> game,
     int tid = omp_get_thread_num();
 	std::ofstream o(directory + "game_" +  std::to_string(tid) +  "_" + std::to_string(t));
 	json jgame;
-	jgame["probabilities"] = probabilities;
+	jgame["probabilities"] = res.probabilities;
 	jgame["winner"] = game->getCanonicalWinner();
-	jgame["history"] = history;
+	jgame["history"] = res.history;
 
 	o << jgame.dump() << std::endl;
+}
+
+int pickAction(ArrayXf p){
+	static std::random_device rd;
+    static std::mt19937 gen(rd());
+	
+	std::discrete_distribution<> dist(p.data(),p.data() +  p.size());
+    return dist(gen);
 }
 
 void play_game(
@@ -56,39 +89,21 @@ void play_game(
 	){
 
 	std::shared_ptr<Game> game = n_game->copy();
-	std::vector<std::vector<float>> probabilities;
-	std::vector<std::vector<std::vector<float>>> history;
-
-	std::random_device rd;
-    std::mt19937 gen(rd());
-
     std::shared_ptr<GameState> gs =  std::make_shared<GameState>(game);
+    Selfplay::Result gameResult;
 
 	int action;
 	ArrayXf p;
 	int game_length = 0;
 
 	while (not game->ended()){
-		//save board
-    	Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> board(game->getBoard());
-
-    	std::vector<std::vector<float>> b_v;
-    	for (int i=0; i<board.rows(); ++i){
-    		b_v.push_back(std::vector<float>(board.row(i).data(), board.row(i).data() + board.row(i).size()));
-    	}
-    	history.push_back(b_v);
-
-    	//simulate
 		p = MCTS::parallel_simulate(gs, model, cfg.mcts);
 
-		//save probability
-    	std::vector<float> p_v(p.data(), p.data() + p.size());
-    	probabilities.push_back(p_v);
-
-    	//playls
-    	std::discrete_distribution<> dist(p.data(),p.data() +  p.size());
-    	action = dist(gen);
+		gameResult.addBoardProbs(game->getBoard(), p);
+	
+    	action = pickAction(p);
     	game->play(action);
+    	
     	game_length++;
     	
     	gs = gs->getChild(action);
@@ -102,7 +117,7 @@ void play_game(
     	}
 	}
 
-	save_game(game, probabilities, history);
+	save_game(game, gameResult);
 }
 
 int main(int argc, char** argv){
