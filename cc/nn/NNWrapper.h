@@ -5,6 +5,7 @@
 #include <Eigen/Dense>
 #include <Eigen/Core>
 #include <torch/script.h>
+#include <torch/torch.h>
 #include "NNUtils.h"
 #include <GameState.h>
 //#include "NNObserver.h"
@@ -22,6 +23,7 @@ namespace fs = std::experimental::filesystem;
 class NNWrapper{
 	private:
 		torch::jit::script::Module module;
+		torch::Device device;
 		std::unordered_map<std::string, NN::Output> netCache;
 		
 		fs::file_time_type modelLastUpdate;

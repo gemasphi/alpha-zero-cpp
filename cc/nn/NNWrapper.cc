@@ -3,7 +3,12 @@
 using namespace Eigen;
 
 
-NNWrapper::NNWrapper(std::string filename) {
+NNWrapper::NNWrapper(std::string filename) : device(torch::kCPU){
+	if (torch::cuda::is_available()) {
+  		std::cout << "CUDA is available! Training on GPU." << std::endl;
+  		this->device = torch::kCUDA;
+	}
+
 	//this->observer = 
 	//	 std::make_unique<NNObserver>(*this, filename, watchFile);;  
 	this->load(filename);
@@ -71,7 +76,7 @@ void NNWrapper::load(std::string filename){
 	std::unique_lock lock(this->modelMutex);
 	try {
 		std::cout << "loading the model\n";
-		this->module = torch::jit::load(filename, torch::kCPU);
+		this->module = torch::jit::load(filename, this->device);
 		this->modelLastUpdate = fs::last_write_time(filename);
 		netCache = std::unordered_map<std::string, NN::Output>();
 		std::cout << "model loaded\n";
@@ -85,7 +90,7 @@ void NNWrapper::load(std::string filename){
 
 std::vector<NN::Output> NNWrapper::predict(NN::Input input){
 	std::vector<torch::jit::IValue> jit_inputs;
-	jit_inputs.push_back(input.boards.to(at::kCPU));
+	jit_inputs.push_back(input.boards.to(this->device));
 	
 	std::shared_lock lock(this->modelMutex);
 	torch::jit::IValue output = this->module.forward(jit_inputs);
