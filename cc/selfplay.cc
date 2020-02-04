@@ -11,7 +11,27 @@
 using json = nlohmann::json;
 namespace fs = std::experimental::filesystem;
 
-void save_game(std::shared_ptr<Game> game, std::vector<std::vector<float>> probabilities, std::vector<std::vector<std::vector<float>>> history){
+
+namespace Selfplay{
+	struct Config {
+		int tempthreshold = 8;
+		float afterThresholdTemp = 1.5;
+		bool print = false;
+
+		MCTS::Config mcts = { 
+    		2, //cpuct 
+    		1, //dirichlet_alpha
+    		25, // n_simulations
+    		0.1, //temp
+    	};
+	};
+}
+
+
+void save_game(std::shared_ptr<Game> game, 
+	std::vector<std::vector<float>> probabilities, 
+	std::vector<std::vector<std::vector<float>>> history
+	){
 	std::string directory = "./temp/games/";
 	std::time_t t = std::time(0); 
 
@@ -29,20 +49,18 @@ void save_game(std::shared_ptr<Game> game, std::vector<std::vector<float>> proba
 	o << jgame.dump() << std::endl;
 }
 
-void play_game(std::shared_ptr<Game> n_game, NNWrapper& model, int count, int tempthreshold = 8, bool print = false){
+void play_game(
+	std::shared_ptr<Game> n_game, 
+	NNWrapper& model, 
+	Selfplay::Config cfg
+	){
+
 	std::shared_ptr<Game> game = n_game->copy();
 	std::vector<std::vector<float>> probabilities;
 	std::vector<std::vector<std::vector<float>>> history;
 
 	std::random_device rd;
     std::mt19937 gen(rd());
-    
-    MCTS::Config mcts = { 
-    	2, //cpuct 
-    	1, //dirichlet_alpha
-    	25, // n_simulations
-    	0.1, //temp
-    };
 
     std::shared_ptr<GameState> gs =  std::make_shared<GameState>(game);
 
@@ -61,7 +79,7 @@ void play_game(std::shared_ptr<Game> n_game, NNWrapper& model, int count, int te
     	history.push_back(b_v);
 
     	//simulate
-		p = MCTS::parallel_simulate(gs, model, mcts);
+		p = MCTS::parallel_simulate(gs, model, cfg.mcts);
 
 		//save probability
     	std::vector<float> p_v(p.data(), p.data() + p.size());
@@ -75,11 +93,11 @@ void play_game(std::shared_ptr<Game> n_game, NNWrapper& model, int count, int te
     	
     	gs = gs->getChild(action);
 
-    	if (game_length > tempthreshold){
-    		mcts.temp = 1.5;
+    	if (game_length > cfg.tempthreshold){
+    		cfg.mcts.temp = cfg.afterThresholdTemp;
     	}
 
-    	if (print){
+    	if (cfg.print){
 			game->printBoard();
     	}
 	}
@@ -87,52 +105,19 @@ void play_game(std::shared_ptr<Game> n_game, NNWrapper& model, int count, int te
 	save_game(game, probabilities, history);
 }
 
-void play_perfectly(std::shared_ptr<Game> n_game, Player& perfectPlayer){
-	std::shared_ptr<Game> game = n_game->copy();
-	std::vector<std::vector<float>> probabilities;
-	std::vector<std::vector<std::vector<float>>> history;
-
-	int i;
-	int action;
-
-	RandomPlayer r_player = RandomPlayer(); 
-	while (not game->ended()){
-		bool randomPlay = (i < 1);
- 		action = randomPlay ? r_player.getAction(game) : perfectPlayer.getAction(game);
-
- 		if (!randomPlay){
- 			Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> board(game->getBoard());
-
-	    	std::vector<std::vector<float>> b_v;
-	    	for (int i=0; i<board.rows(); ++i){
-	    		b_v.push_back(std::vector<float>(board.row(i).data(), board.row(i).data() + board.row(i).size()));
-	    	}
-	    	
-	    	history.push_back(b_v);
-
-    		std::vector<float> v(game->getActionSize(), 0);
-    		v[action] = 1;
-			probabilities.push_back(v);
- 		}
-
-    	game->play(action);
-		i++;
-	}
-
-	save_game(game, probabilities, history);
-}
 int main(int argc, char** argv){
 	std::shared_ptr<Game> g = Game::create(argv[1]);
 	int n_games = std::stoi(argv[3]);
+	Selfplay::Config cfg; 
+
 
 	std::cout << "n games:" << n_games<< std::endl;
 	NNWrapper model = NNWrapper(argv[2]);
-	
 	#pragma omp parallel
 	{	
 	int i = 0;
 	while (true){
-		play_game(g, model, i + 1);
+		play_game(g, model, cfg);
 
 		auto now = std::chrono::system_clock::now();
 		std::time_t now_time = std::chrono::system_clock::to_time_t(now);
