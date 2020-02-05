@@ -4,6 +4,7 @@
 #include <Game.h>
 #include <random>
 #include <json.hpp>
+#include <cxxopts.hpp>
 #include <experimental/filesystem>
 #include <ctime>
 #include <chrono>
@@ -14,6 +15,10 @@ namespace fs = std::experimental::filesystem;
 
 namespace Selfplay{
 	struct Config {
+		int n_games;
+		std::string game_name;
+		std::string model_loc;
+
 		int tempthreshold = 8;
 		float afterThresholdTemp = 1.5;
 		bool print = false;
@@ -120,34 +125,52 @@ void play_game(
 	save_game(game, gameResult);
 }
 
+
+Selfplay::Config parseCommandLine(int argc, char** argv){
+	cxxopts::Options options("Selfplay", "");
+	options.add_options()
+  		("m,model", "Model Location",  cxxopts::value<std::string>())
+  		("g,game", "Game",  cxxopts::value<std::string>())
+  		("n,n_games", "Number of games",  cxxopts::value<int>())
+  	;
+
+  	auto result = options.parse(argc, argv);
+  	Selfplay::Config cfg{
+  		.n_games = result["n_games"].as<int>(),
+  		.game_name = result["game"].as<std::string>(),
+  		.model_loc = result["model"].as<std::string>(),
+  	};
+
+	return cfg;
+}
+
 int main(int argc, char** argv){
-	std::shared_ptr<Game> g = Game::create(argv[1]);
-	int n_games = std::stoi(argv[3]);
-	Selfplay::Config cfg; 
+	Selfplay::Config cfg = parseCommandLine(argc, argv); 
 
-
-	std::cout << "n games:" << n_games<< std::endl;
-	NNWrapper model = NNWrapper(argv[2]);
+	std::shared_ptr<Game> g = Game::create(cfg.game_name);
+	NNWrapper model = NNWrapper(cfg.model_loc);
+	int n_games = (cfg.n_games / omp_get_max_threads()) + 1;
+	
 	#pragma omp parallel
 	{	
-	int i = 0;
-	while (true){
-		play_game(g, model, cfg);
+		int i = 0;
+		while (true){
+			play_game(g, model, cfg);
 
-		auto now = std::chrono::system_clock::now();
-		std::time_t now_time = std::chrono::system_clock::to_time_t(now);
-		std::cout<< std::ctime(&now_time) <<" Game Generated" << std::endl;
+			auto now = std::chrono::system_clock::now();
+			std::time_t now_time = std::chrono::system_clock::to_time_t(now);
+			std::cout<< std::ctime(&now_time) <<" Game Generated" << std::endl;
 
-		#pragma omp critical
-		{
-			model.shouldLoad(argv[2]);
-		}		
+			#pragma omp critical
+			{
+				model.shouldLoad(cfg.model_loc);
+			}		
 
-		i++;
-		if (n_games > 0 && i == n_games){
-			break;
+			i++;
+			if (n_games > 0 && i == n_games){
+				break;
+			}
 		}
-	}
 	}
 	return 0;
 }

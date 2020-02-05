@@ -38,11 +38,12 @@ set(BASE_INCLUDE
 	${CMAKE_SOURCE_DIR}/mcts
 	${CMAKE_SOURCE_DIR}/player
 	${JSON_INCLUDE_DIR}
+	${CXXOPTS_INCLUDE_DIR}
 	)
 
 
-add_executable(selfplay selfplay.cc)
-add_dependencies(selfplay json Eigen3)
+add_executable(selfplay selfplay.cc )
+add_dependencies(selfplay json Eigen3 cxxopts)
 target_include_directories(selfplay PUBLIC ${BASE_INCLUDE})
 target_link_libraries(selfplay ${BASE_LIBRARIES})
 

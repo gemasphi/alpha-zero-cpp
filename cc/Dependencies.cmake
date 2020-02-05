@@ -79,3 +79,17 @@ endif()
 
 FILE(GLOB CONNECT_SOLVER_CPP  "${connect4solver_SOURCE_DIR}/*.cpp")
 list(REMOVE_ITEM CONNECT_SOLVER_CPP "${connect4solver_SOURCE_DIR}/main.cpp")
+
+
+ExternalProject_Add(cxxopts
+  URL "https://github.com/jarro2783/cxxopts/archive/v2.2.0.zip"
+  UPDATE_COMMAND ""
+  CONFIGURE_COMMAND ""
+  BUILD_COMMAND ""
+  INSTALL_COMMAND
+   ${CMAKE_COMMAND} -E copy
+      ${CMAKE_BINARY_DIR}/cxxopts-prefix/src/cxxopts/include/cxxopts.hpp
+      ${INSTALL_DEPENDENCIES_DIR}/include/cxxopts/cxxopts.hpp
+ )
+
+set(CXXOPTS_INCLUDE_DIR  ${INSTALL_DEPENDENCIES_DIR}/include/cxxopts/)
