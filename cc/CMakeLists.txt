@@ -47,3 +47,8 @@ add_dependencies(selfplay json Eigen3 cxxopts)
 target_include_directories(selfplay PUBLIC ${BASE_INCLUDE})
 target_link_libraries(selfplay ${BASE_LIBRARIES})
 
+
+add_executable(play_agaisnt play_agaisnt.cc)
+add_dependencies(play_agaisnt json Eigen3 cxxopts)
+target_include_directories(play_agaisnt PUBLIC ${BASE_INCLUDE})
+target_link_libraries(play_agaisnt ${BASE_LIBRARIES})

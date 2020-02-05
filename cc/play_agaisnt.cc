@@ -5,11 +5,28 @@
 #include <json.hpp>
 #include <experimental/filesystem>
 #include <algorithm>
+#include <cxxopts.hpp>
 
 using json = nlohmann::json;
 namespace fs = std::experimental::filesystem;
 
 namespace Match{
+	struct Config{
+		std::string id;
+		int n_games;
+		std::string game_name;
+		std::string model_loc1;
+		std::string model_loc2;
+
+
+	    MCTS::Config mcts = { 
+	    	2, //cpuct 
+	    	1, //dirichlet_alpha
+	    	5, // n_simulations
+	    	1, //temp
+	    };
+	};
+
 	struct Info {
 		Game& game;
 		ProbabilisticPlayer& p1;
@@ -27,6 +44,12 @@ namespace Match{
 			p2(p2),
 			perfectPlayer(perfectPlayer)
 			{} 
+
+		void alternatePlayer(){
+			ProbabilisticPlayer& _p1 = this->p1;
+			this->p1 = this->p2;
+			this->p2 = _p1;
+		}
 	};
 
 	struct Result {
@@ -114,6 +137,7 @@ Match::Result play_game(Match::Info m, bool print = false){
 
 	Match::Result result = Match::Result();
 	while (not game->ended()){
+
 		action = (i % 2 == 0) ? p1.getAction(game, (i > 3))
 							  : p2.getAction(game, (i > 3));  
 							  //: p2.getAction(game, (i > 3));  
@@ -140,45 +164,68 @@ Match::Result play_game(Match::Info m, bool print = false){
 	return result;
 }
 
-void player_vs_player(std::string id, Match::Info m, int n_games = 1){
+
+void player_vs_player(std::string id, Match::Info match, int n_games = 1){
 	int p1_wins = 0;
 	int draws = 0;
 	std::vector<Match::Result> results;
 
 	for(int i = 0; i < n_games; i++){
-		Match::Result result;
-		result = play_game(m, (n_games == 1));
+		Match::Result result = play_game(match, (n_games == 1));
 		results.push_back(result);
+		
+		std::cout<< "One game played, winner: " << result.winner << std::endl; 
+		match.alternatePlayer();
 
-		std::cout<< "One game played, winner: " << result.winner << std::endl;  
-
-		result.winner == 0 ? draws++ : ( result.winner == 1 ? p1_wins++ : i);
+		if(result.winner == 0){
+			draws++;	
+		}  
+		else if(i%2 == 0){
+			result.winner == 1 ? p1_wins++ : i;
+		}
+		else{
+		 	result.winner != 1 ? p1_wins++ : i;
+		}
 	}
 
 	save_matches(results, id, p1_wins, draws, n_games - p1_wins - draws);
 }
 
-int main(int argc, char** argv){
-	std::shared_ptr<Game> game = Game::create(argv[1]);
-	
-    MCTS::Config mcts = { 
-    	2, //cpuct 
-    	1, //dirichlet_alpha
-    	5, // n_simulations
-    	1, //temp
-    };
+Match::Config parseCommandLine(int argc, char** argv){
+	cxxopts::Options options("Selfplay", "");
+	options.add_options()
+  		("i,id", "Id for this test",  cxxopts::value<std::string>())
+  		("n,n_games", "Number of games",  cxxopts::value<int>())
+  		("g,game", "Game",  cxxopts::value<std::string>())
+  		("model_one", "Model Location for player one",  cxxopts::value<std::string>())
+  		("model_two", "Model Location for player two",  cxxopts::value<std::string>())
+  	;
+  		//("n_p,n_games_perfect", "Number of games agaisnt perfectPlayer",  cxxopts::value<int>())
 
-	NNWrapper nn = NNWrapper(argv[2]);
-	AlphaZeroPlayer p1 = AlphaZeroPlayer(nn, mcts);
+  	auto result = options.parse(argc, argv);
+
+  	Match::Config cfg{
+  		.id = result["id"].as<std::string>(),
+  		.n_games = result["n_games"].as<int>(),
+  		.game_name = result["game"].as<std::string>(),
+  		.model_loc1 = result["model_one"].as<std::string>(),
+  		.model_loc2 = result["model_two"].as<std::string>(),
+  	};
+
+	return cfg;
+}
+
+
+int main(int argc, char** argv){
+	Match::Config cfg = parseCommandLine(argc, argv);
+
+	std::shared_ptr<Game> game = Game::create(cfg.game_name);
+
+	NNWrapper nn1 =  NNWrapper(cfg.model_loc1);
+	NNWrapper nn2 =  NNWrapper(cfg.model_loc2);
+	AlphaZeroPlayer p1 = AlphaZeroPlayer(nn1, cfg.mcts);
+	AlphaZeroPlayer p2 = AlphaZeroPlayer(nn2, cfg.mcts);
 	
-	NNWrapper nn2 = NNWrapper(argv[5]);
-	AlphaZeroPlayer p2 = AlphaZeroPlayer(nn2, mcts, false);
-	//NNPlayer p1 = NNPlayer(nn);
-	//NNPlayer p2 = NNPlayer(nn2);
-	//HumanPlayer p1 = HumanPlayer();
-	//HumanPlayer p2 = HumanPlayer();
-	//ConnectSolver p1 = ConnectSolver(argv[4]);
-	//ConnectSolver p1 = ConnectSolver(argv[4]);
 	//ConnectSolver p1 = ConnectSolver(argv[4]);
 	
 	std::shared_ptr<PerfectPlayer> 
@@ -187,14 +234,13 @@ int main(int argc, char** argv){
 	//RandomPlayer p2 = RandomPlayer();
 	//RandomPlayer p1 = RandomPlayer();
 
-	Match::Info m = Match::Info(
+	Match::Info match = Match::Info(
 		*game,
 		p1,
 		p2,
 		perfectPlayer);
 	
-	std::string id = argv[6];
-	player_vs_player(id, m, std::stoi(argv[3]));
+	player_vs_player(cfg.id, match, cfg.n_games);
 
 	return 0;
 }
