@@ -29,14 +29,14 @@ namespace Match{
 
 	struct Info {
 		Game& game;
-		ProbabilisticPlayer& p1;
-		ProbabilisticPlayer& p2;
+		Player& p1;
+		Player& p2;
 		std::shared_ptr<PerfectPlayer> perfectPlayer;
 
 		Info(
 			Game& game,
-			ProbabilisticPlayer& p1,
-			ProbabilisticPlayer& p2,
+			Player& p1,
+			Player& p2,
 			std::shared_ptr<PerfectPlayer> perfectPlayer
 			): 
 			game(game),
@@ -46,7 +46,7 @@ namespace Match{
 			{} 
 
 		void alternatePlayer(){
-			ProbabilisticPlayer& _p1 = this->p1;
+			Player& _p1 = this->p1;
 			this->p1 = this->p2;
 			this->p2 = _p1;
 		}
@@ -126,8 +126,8 @@ void save_matches(
 
 Match::Result play_game(Match::Info m, bool print = false){
 	std::shared_ptr<Game> game = m.game.copy();
-	ProbabilisticPlayer& p1 = m.p1;
-	ProbabilisticPlayer& p2 = m.p2;
+	Player& p1 = m.p1;
+	Player& p2 = m.p2;
 	std::shared_ptr<PerfectPlayer> perfectPlayer = m.perfectPlayer;
 
 	int i = 0;
@@ -138,8 +138,8 @@ Match::Result play_game(Match::Info m, bool print = false){
 	Match::Result result = Match::Result();
 	while (not game->ended()){
 
-		action = (i % 2 == 0) ? p1.getAction(game, (i > 3))
-							  : p2.getAction(game, (i > 3));  
+		action = (i % 2 == 0) ? p1.getAction(game)
+							  : p2.getAction(game);  
 							  //: p2.getAction(game, (i > 3));  
 
 		if (perfectPlayer and i%2 == 0){
@@ -223,8 +223,8 @@ int main(int argc, char** argv){
 
 	NNWrapper nn1 =  NNWrapper(cfg.model_loc1);
 	NNWrapper nn2 =  NNWrapper(cfg.model_loc2);
-	AlphaZeroPlayer p1 = AlphaZeroPlayer(nn1, cfg.mcts);
-	AlphaZeroPlayer p2 = AlphaZeroPlayer(nn2, cfg.mcts);
+	AlphaZeroPlayer p1 = AlphaZeroPlayer(nn1, cfg.mcts, 3);
+	AlphaZeroPlayer p2 = AlphaZeroPlayer(nn2, cfg.mcts, 3);
 	
 	//ConnectSolver p1 = ConnectSolver(argv[4]);
 	

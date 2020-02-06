@@ -28,9 +28,14 @@ class PerfectPlayer : public Player
 
 class ProbabilisticPlayer : public Player
 {
-	public:
-		virtual int getAction(std::shared_ptr<Game> game, bool deterministc) = 0;
+	private:
+		int howManyMovesPlayed = 0;
+		int deterministicAfter;
 
+	public:
+		ProbabilisticPlayer(int deterministicAfter);
+		int getAction(std::shared_ptr<Game> game);
+		virtual ArrayXf getProbabilities(std::shared_ptr<Game> game) = 0;
 };
 
 class HumanPlayer : public Player
@@ -63,9 +68,8 @@ class NNPlayer : public ProbabilisticPlayer
 	NNWrapper& nn;
 	
 	public:
-		NNPlayer(NNWrapper& nn);
-		int getAction(std::shared_ptr<Game> game);
-		int getAction(std::shared_ptr<Game> game, bool deterministc);
+		NNPlayer(NNWrapper& nn, int deterministicAfter);
+		ArrayXf getProbabilities(std::shared_ptr<Game> game);
 
 };
 
@@ -77,9 +81,8 @@ class AlphaZeroPlayer : public ProbabilisticPlayer
 		bool parallel;
 
 	public:
-		AlphaZeroPlayer(NNWrapper& nn, MCTS::Config mcts, bool parallel  = true);
-		int getAction(std::shared_ptr<Game> game);
-		int getAction(std::shared_ptr<Game> game, bool deterministc);
+		AlphaZeroPlayer(NNWrapper& nn, MCTS::Config mcts, int deterministicAfter, bool parallel  = true);
+		ArrayXf getProbabilities(std::shared_ptr<Game> game);
 };
 
 #endif 

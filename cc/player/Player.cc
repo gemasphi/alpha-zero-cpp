@@ -88,16 +88,28 @@ std::vector<int> ConnectSolver::calcScores(std::shared_ptr<Game> game){
     return max_index;
 }
 
+ProbabilisticPlayer::ProbabilisticPlayer(int deterministicAfter) : deterministicAfter(deterministicAfter) {}
 
-AlphaZeroPlayer::AlphaZeroPlayer(NNWrapper& nn, MCTS::Config mcts, bool parallel): 
-								nn(nn), mcts(mcts), parallel(parallel){}
+int ProbabilisticPlayer::getAction(std::shared_ptr<Game> game){
+	ArrayXf p = this->getProbabilities(game);
+	int action;
 
-int AlphaZeroPlayer::getAction(std::shared_ptr<Game> game){
-	return this->getAction(game, true); 
+	if (this->howManyMovesPlayed > this->deterministicAfter){
+		p.maxCoeff(&action);
+	} else {
+		action = pickStochasticElement(p);
+	}
+
+	this->howManyMovesPlayed++;
+
+	return action;
 }
 
-int AlphaZeroPlayer::getAction(std::shared_ptr<Game> game, bool deterministc){
-	int action;
+AlphaZeroPlayer::AlphaZeroPlayer(NNWrapper& nn, MCTS::Config mcts, int deterministicAfter, bool parallel): 
+								ProbabilisticPlayer(deterministicAfter),
+								nn(nn), mcts(mcts), parallel(parallel){}
+
+ArrayXf AlphaZeroPlayer::getProbabilities(std::shared_ptr<Game> game){
 	ArrayXf p;
 
 	if (parallel){
@@ -106,41 +118,22 @@ int AlphaZeroPlayer::getAction(std::shared_ptr<Game> game, bool deterministc){
 	else{
 		p = MCTS::simulate(game, this->nn, this->mcts);
 	}
-
-	//std::cout<<"probablities"<< "\n" << p << std::endl;
-
-	if (deterministc){
-		p.maxCoeff(&action);
-	} else {
-		action = pickStochasticElement(p);
-	}
 	
-	return action; 
+	return p; 
 }
 
 
-NNPlayer::NNPlayer(NNWrapper& nn) : nn(nn) {}
+NNPlayer::NNPlayer(NNWrapper& nn, int deterministicAfter) : ProbabilisticPlayer(deterministicAfter), nn(nn) {}
 
-int NNPlayer::getAction(std::shared_ptr<Game> game){
-	return this->getAction(game, true);
-}
-
-int NNPlayer::getAction(std::shared_ptr<Game> game, bool deterministc){
-	int action;
-
+ArrayXf NNPlayer::getProbabilities(std::shared_ptr<Game> game){
 	NN::Input i = NN::Input({game->getBoard()*game->getPlayer()});
 	NN::Output res = this->nn.predict(i)[0];
 
 	ArrayXf poss = game->getPossibleActions();
 	ArrayXf valid_actions = poss*res.policy;
 	
-	if (deterministc){
-		valid_actions.maxCoeff(&action);
-	} else {
-		action = pickStochasticElement(valid_actions);
-	}
 
-	return action;
+	return valid_actions;
 }
 
 int RandomPlayer::getAction(std::shared_ptr<Game> game){

@@ -41,22 +41,17 @@ ArrayXf MCTS::parallel_simulate(std::shared_ptr<GameState> root, NNWrapper& mode
 		
 		#pragma omp parallel num_threads(cfg.num_threads)
 		{
-		//	std::cout << "selecting " << "from me" << omp_get_thread_num() << std::endl;
 			std::shared_ptr<GameState> leaf = root->select(cfg.cpuct);
-		//	std::cout << leaf << "from me" << omp_get_thread_num() << std::endl;
 			if (leaf->endGame()){
 				leaf->backup(leaf->getWinner());
 			}
 			else{
-		//		std::cout << "adding virutal loss" << omp_get_thread_num() << std::endl;
 				leaf->addVirtualLoss(cfg.vloss);
-		//		std::cout << "beep" << omp_get_thread_num() << std::endl;
 				
 				#pragma omp critical
 				leafs.push_back(leaf);
 			}
 		}
-	//	std::cout << leafs << std::endl;
 		if (leafs.size() == 0){
 			break;
 		}
@@ -64,7 +59,7 @@ ArrayXf MCTS::parallel_simulate(std::shared_ptr<GameState> root, NNWrapper& mode
 		std::vector<NN::Output> res = model.maybeEvaluate(leafs);
 
 		#pragma omp parallel for
-		for(int i = 0; i < leafs.size(); i++){
+		for(unsigned int i = 0; i < leafs.size(); i++){
 			leafs[i]->removeVirtualLoss(cfg.vloss);
 			leafs[i]->expand(res[i].policy, cfg.dirichlet_alpha);
 			leafs[i]->backup(res[i].value);
