@@ -29,14 +29,15 @@ namespace Match{
 
 	struct Info {
 		Game& game;
-		Player& p1;
-		Player& p2;
+		std::shared_ptr<Player> p1;
+		std::shared_ptr<Player> p2;
 		std::shared_ptr<PerfectPlayer> perfectPlayer;
+		bool aligned = true; //if model_loc1 = p1 etc
 
 		Info(
 			Game& game,
-			Player& p1,
-			Player& p2,
+			std::shared_ptr<Player> p1,
+			std::shared_ptr<Player> p2,
 			std::shared_ptr<PerfectPlayer> perfectPlayer
 			): 
 			game(game),
@@ -46,9 +47,10 @@ namespace Match{
 			{} 
 
 		void alternatePlayer(){
-			Player& _p1 = this->p1;
-			this->p1 = this->p2;
-			this->p2 = _p1;
+			p1.swap(p2);
+			std::cout<< p1 << std::endl;
+			std::cout<< p2 << std::endl;
+			aligned = !aligned;
 		}
 	};
 
@@ -69,7 +71,9 @@ namespace Match{
 	    	this->history.push_back(b_v);
 		}
 
-		void addAgreement(bool agree, bool p1){
+		void addAgreement(std::vector<int> best_actions, int action, bool p1){
+			bool agree = std::find(best_actions.begin(), best_actions.end(), action) != best_actions.end();
+			std::cout << "p1:"<<  p1 <<" agree:"<< agree<<std::endl;
 			p1  ? this->agreement1.push_back(agree) 
 				: this->agreement2.push_back(agree);
 		}
@@ -126,36 +130,33 @@ void save_matches(
 
 Match::Result play_game(Match::Info m, bool print = false){
 	std::shared_ptr<Game> game = m.game.copy();
-	Player& p1 = m.p1;
-	Player& p2 = m.p2;
+	Player& p1 = *(m.p1);
+	Player& p2 = *(m.p2);
 	std::shared_ptr<PerfectPlayer> perfectPlayer = m.perfectPlayer;
 
 	int i = 0;
 	int action;
 
 	//RandomPlayer prand = RandomPlayer();
-
+	std::cout<< m.aligned<< std::endl;
 	Match::Result result = Match::Result();
 	while (not game->ended()){
 
 		action = (i % 2 == 0) ? p1.getAction(game)
 							  : p2.getAction(game);  
-							  //: p2.getAction(game, (i > 3));  
 
-		if (perfectPlayer and i%2 == 0){
-			//std::vector<int> best_actions;	
-			perfectPlayer->getAction(game);
-			//bool agree = std::find(best_actions.begin(), best_actions.end(), action) != best_actions.end();
-			//result.addAgreement(agree, (i % 2 == 0));
-		}
 
-		i++;
+		if (perfectPlayer) result.addAgreement(
+							perfectPlayer->getBestActions(game), 
+							action, 
+							!(m.aligned) == !(i % 2 == 0));
+		
 		game->play(action);
 		result.addBoard(game->getBoard());
 
-		if (print){
-			game->printBoard();
-		}
+		i++;
+
+		if (print) game->printBoard();
 	}
 
 	game->printBoard();
@@ -169,23 +170,25 @@ void player_vs_player(std::string id, Match::Info match, int n_games = 1){
 	int p1_wins = 0;
 	int draws = 0;
 	std::vector<Match::Result> results;
-
+	
 	for(int i = 0; i < n_games; i++){
+
 		Match::Result result = play_game(match, (n_games == 1));
 		results.push_back(result);
 		
 		std::cout<< "One game played, winner: " << result.winner << std::endl; 
-		match.alternatePlayer();
-
+	
 		if(result.winner == 0){
 			draws++;	
 		}  
-		else if(i%2 == 0){
+		else if(match.aligned){
 			result.winner == 1 ? p1_wins++ : i;
 		}
 		else{
 		 	result.winner != 1 ? p1_wins++ : i;
 		}
+
+		match.alternatePlayer();
 	}
 
 	save_matches(results, id, p1_wins, draws, n_games - p1_wins - draws);
@@ -218,21 +221,14 @@ Match::Config parseCommandLine(int argc, char** argv){
 
 int main(int argc, char** argv){
 	Match::Config cfg = parseCommandLine(argc, argv);
-
 	std::shared_ptr<Game> game = Game::create(cfg.game_name);
 
 	NNWrapper nn1 =  NNWrapper(cfg.model_loc1);
 	NNWrapper nn2 =  NNWrapper(cfg.model_loc2);
-	AlphaZeroPlayer p1 = AlphaZeroPlayer(nn1, cfg.mcts, 3);
-	AlphaZeroPlayer p2 = AlphaZeroPlayer(nn2, cfg.mcts, 3);
+	std::shared_ptr<AlphaZeroPlayer> p1 = std::make_shared<AlphaZeroPlayer>(nn1, cfg.mcts, 3);
+	std::shared_ptr<AlphaZeroPlayer> p2 = std::make_shared<AlphaZeroPlayer>(nn2, cfg.mcts, 3);
 	
-	//ConnectSolver p1 = ConnectSolver(argv[4]);
-	
-	std::shared_ptr<PerfectPlayer> 
-		perfectPlayer;// = std::make_shared<ConnectSolver>(argv[4]); 
-	
-	//RandomPlayer p2 = RandomPlayer();
-	//RandomPlayer p1 = RandomPlayer();
+	std::shared_ptr<PerfectPlayer> perfectPlayer;
 
 	Match::Info match = Match::Info(
 		*game,
@@ -241,6 +237,18 @@ int main(int argc, char** argv){
 		perfectPlayer);
 	
 	player_vs_player(cfg.id, match, cfg.n_games);
+
+
+	perfectPlayer = std::make_shared<ConnectSolver>(""); 
+	std::shared_ptr<RandomPlayer> randomPlayer = std::make_shared<RandomPlayer>();
+	
+	Match::Info pmatch = Match::Info(
+		*game,
+		perfectPlayer,
+		randomPlayer,
+		perfectPlayer);
+	
+	player_vs_player(cfg.id, pmatch, cfg.n_games);
 
 	return 0;
 }
