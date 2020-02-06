@@ -2,8 +2,17 @@
 
 using namespace Eigen;
 
+ArrayXf MCTS::simulate(std::shared_ptr<Game> game, NNWrapper& model, MCTS::Config cfg){		
+	return cfg.parallel ? do_parallel_simulate(std::make_shared<GameState>(game), model, cfg) 
+						: do_simulate(std::make_shared<GameState>(game), model, cfg);  
+}
 
-ArrayXf MCTS::simulate(std::shared_ptr<GameState> root, NNWrapper& model, MCTS::Config cfg){
+ArrayXf MCTS::simulate(std::shared_ptr<GameState> root, NNWrapper& model, MCTS::Config cfg){		
+	return cfg.parallel ? do_parallel_simulate(root, model, cfg) 
+						: do_simulate(root, model, cfg);  
+}
+
+ArrayXf MCTS::do_simulate(std::shared_ptr<GameState> root, NNWrapper& model, MCTS::Config cfg){
 	std::shared_ptr<GameState> leaf; 
 
 	for (int i = 0; i < cfg.n_simulations + 1; i++){
@@ -24,15 +33,8 @@ ArrayXf MCTS::simulate(std::shared_ptr<GameState> root, NNWrapper& model, MCTS::
 	return root->getSearchPolicy(cfg.temp);
 }
 
-ArrayXf MCTS::simulate(std::shared_ptr<Game> game, NNWrapper& model, MCTS::Config cfg){
-	return simulate(std::make_shared<GameState>(game), model, cfg);
-}
 
-ArrayXf MCTS::parallel_simulate(std::shared_ptr<Game> game, NNWrapper& model, MCTS::Config cfg){
-	return parallel_simulate(std::make_shared<GameState>(game), model, cfg);
-}
-
-ArrayXf MCTS::parallel_simulate(std::shared_ptr<GameState> root, NNWrapper& model, MCTS::Config cfg){
+ArrayXf MCTS::do_parallel_simulate(std::shared_ptr<GameState> root, NNWrapper& model, MCTS::Config cfg){
 	int simulations_to_run = cfg.n_simulations / cfg.num_threads; 
 	//we do more than the n_simulations currently
 	

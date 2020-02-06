@@ -81,7 +81,7 @@ class AlphaZeroPlayer : public ProbabilisticPlayer
 		bool parallel;
 
 	public:
-		AlphaZeroPlayer(NNWrapper& nn, MCTS::Config mcts, int deterministicAfter, bool parallel  = true);
+		AlphaZeroPlayer(NNWrapper& nn, MCTS::Config mcts, int deterministicAfter);
 		ArrayXf getProbabilities(std::shared_ptr<Game> game);
 };
 

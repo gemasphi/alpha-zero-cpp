@@ -105,21 +105,12 @@ int ProbabilisticPlayer::getAction(std::shared_ptr<Game> game){
 	return action;
 }
 
-AlphaZeroPlayer::AlphaZeroPlayer(NNWrapper& nn, MCTS::Config mcts, int deterministicAfter, bool parallel): 
+AlphaZeroPlayer::AlphaZeroPlayer(NNWrapper& nn, MCTS::Config mcts, int deterministicAfter): 
 								ProbabilisticPlayer(deterministicAfter),
-								nn(nn), mcts(mcts), parallel(parallel){}
+								nn(nn), mcts(mcts){}
 
 ArrayXf AlphaZeroPlayer::getProbabilities(std::shared_ptr<Game> game){
-	ArrayXf p;
-
-	if (parallel){
-		p = MCTS::parallel_simulate(game, this->nn, this->mcts);
-	}
-	else{
-		p = MCTS::simulate(game, this->nn, this->mcts);
-	}
-	
-	return p; 
+	return MCTS::simulate(game, this->nn, this->mcts); 
 }
 
 
