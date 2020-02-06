@@ -22,7 +22,17 @@ class Player
 class PerfectPlayer : public Player
 {
 	public:
-		virtual int getAction(std::shared_ptr<Game> game, std::vector<int>& best_scores) = 0;
+		int getAction(std::shared_ptr<Game> game);
+		virtual std::vector<int> getBestActions(std::shared_ptr<Game> game) = 0;
+
+};
+
+class ConnectSolver : public PerfectPlayer
+{
+	Solver solver;
+	public:
+		ConnectSolver(std::string opening_book);
+		std::vector<int> getBestActions(std::shared_ptr<Game> game);
 
 };
 
@@ -50,18 +60,6 @@ class RandomPlayer : public Player
 		int getAction(std::shared_ptr<Game> game);
 };
 
-
-class ConnectSolver : public PerfectPlayer
-{
-	Solver solver;
-	public:
-		ConnectSolver(std::string opening_book);
-		int getAction(std::shared_ptr<Game> game, std::vector<int>& best_scores);
-		int getAction(std::shared_ptr<Game> game);
-
-	private:
-		std::vector<int> calcScores(std::shared_ptr<Game> game);
-};
 
 class NNPlayer : public ProbabilisticPlayer
 {

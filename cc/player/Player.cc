@@ -39,22 +39,16 @@ int HumanPlayer::getAction(std::shared_ptr<Game> game){
 	return action;
 }
 
+
+int PerfectPlayer::getAction(std::shared_ptr<Game> game){
+	return pickRandomElement(this->getBestActions(game));
+}
+
 ConnectSolver::ConnectSolver(std::string opening_book){
   this->solver.loadBook(opening_book);	
 }
 
-
-int ConnectSolver::getAction(std::shared_ptr<Game> game, std::vector<int>& best_indexes){
-	best_indexes = this->calcScores(game);
-	return pickRandomElement(best_indexes); 
-}
-
-int ConnectSolver::getAction(std::shared_ptr<Game> game){
-	return pickRandomElement(this->calcScores(game));
-}
-
-
-std::vector<int> ConnectSolver::calcScores(std::shared_ptr<Game> game){
+std::vector<int> ConnectSolver::getBestActions(std::shared_ptr<Game> game){
 	std::shared_ptr<ConnectFour> c_game = std::dynamic_pointer_cast<ConnectFour>(game); 
     ArrayXf poss = c_game->getPossibleActions();
 	

@@ -143,10 +143,10 @@ Match::Result play_game(Match::Info m, bool print = false){
 							  //: p2.getAction(game, (i > 3));  
 
 		if (perfectPlayer and i%2 == 0){
-			std::vector<int> best_actions;	
-			perfectPlayer->getAction(game, best_actions);
-			bool agree = std::find(best_actions.begin(), best_actions.end(), action) != best_actions.end();
-			result.addAgreement(agree, (i % 2 == 0));
+			//std::vector<int> best_actions;	
+			perfectPlayer->getAction(game);
+			//bool agree = std::find(best_actions.begin(), best_actions.end(), action) != best_actions.end();
+			//result.addAgreement(agree, (i % 2 == 0));
 		}
 
 		i++;
