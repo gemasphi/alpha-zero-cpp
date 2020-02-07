@@ -8,6 +8,7 @@ import torch.optim as optim
 import sys
 import time
 import pandas as pd
+import argparse
 
 GAME_DIR = "cc/build/temp/games/"
 SAVE_CHECKPOINT = 1000
@@ -123,4 +124,10 @@ def train_az(model_loc,
 	return total_loss/i
 
 if __name__ == "__main__":
-	train_az(sys.argv[1], sys.argv[2], int(sys.argv[3]), int(sys.argv[4]))
+	parser = argparse.ArgumentParser(description='Train network')
+	parser.add_argument('--model', help='model loc')
+	parser.add_argument('--folder', help='where to save the new models')
+	parser.add_argument('--n_iters',  type=int, help='n iters to run')
+	args = parser.parse_args()
+
+	train_az(args.model, args.folder, n_iter = args.n_iters)

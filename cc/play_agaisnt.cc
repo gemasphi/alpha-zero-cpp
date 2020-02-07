@@ -102,16 +102,6 @@ namespace Match{
 	};
 
 
-	void to_json(json& j, const Player& p){
-		j = json{
-				{"name", p.name}, 
-				{"won", p.won}, 
-			}; 
-
-		if (p.total_agreement != 0){
-			j["move_agreement"] =  (float) p.agreement_count / p.total_agreement; 		
-		}
-	}
 
 	struct Results
 	{
@@ -138,6 +128,16 @@ namespace Match{
 		}	
 	};
 
+	void to_json(json& j, const Player& p){
+		j = json{
+				{"name", p.name}, 
+				{"won", p.won}, 
+			}; 
+
+		if (p.total_agreement != 0){
+			j["move_agreement"] =  (float) p.agreement_count / p.total_agreement; 		
+		}
+	}
 
 	void add_agreement_to_json(json& j, std::string name, std::vector<bool> agreement){
 		if (!agreement.empty()){ 
