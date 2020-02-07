@@ -86,34 +86,66 @@ namespace Match{
 
 	};
 
+	struct Player
+	{
+		std::string name;
+		int agreement_count = 0;
+		int total_agreement = 0;
+		int won = 0;
+
+		Player(std::string name) : name(name) {}	
+
+		void updateAgreement(std::vector<bool> agreement){
+			agreement_count += std::count(agreement.begin(), agreement.end(), true);
+			total_agreement += agreement.size();
+		}
+	};
+
+
+	void to_json(json& j, const Player& p){
+		j = json{
+				{"name", p.name}, 
+				{"won", p.won}, 
+			}; 
+
+		if (p.total_agreement != 0){
+			j["move_agreement"] =  (float) p.agreement_count / p.total_agreement; 		
+		}
+	}
+
 	struct Results
 	{
 		std::vector<Match::Result> results;
 		Match::Config cfg;
-		std::string p1_name;
-		std::string p2_name;
-
-		int p1_wins = 0;
-		int draws = 0;
+		Player p1;
+		Player p2;
 
 		Results(Match::Config cfg, Match::Info m): 
-				cfg(cfg), p1_name(m.p1->name()), p2_name(m.p2->name()) {};
+				cfg(cfg), p1(m.p1->name()), p2(m.p2->name()) {};
 
 		void addResult(Match::Result res, bool aligned){
 			results.push_back(res);
+			p1.updateAgreement(res.agreement1);
+			p2.updateAgreement(res.agreement2);
 
-			if(res.winner == 0){
-				this->draws++;	
-			}  
-			else if(aligned){
-				res.winner == 1 ? this->p1_wins++ : 0;
-			}
-			else{
-			 	res.winner != 1 ? this->p1_wins++ : 0;
+			if(res.winner != 0){
+				if(aligned){
+					res.winner == 1 ? this->p1.won++ : this->p2.won++;
+				} else {
+					res.winner == 1 ? this->p2.won++ : this->p1.won++;
+				}
 			}
 		}	
 	};
 
+
+	void add_agreement_to_json(json& j, std::string name, std::vector<bool> agreement){
+		if (!agreement.empty()){ 
+			j[name] = agreement; 
+			j[name + "%"] = (float) std::count(agreement.begin(), agreement.end(), true)
+							   / agreement.size();
+		}
+	}
 
 	void to_json(json& j, const Result& r){
 		j = json{
@@ -123,19 +155,17 @@ namespace Match{
 				{"p2", r.p2}, 
 			}; 
 
-		if (!r.agreement1.empty()) j["agreement1"] = r.agreement1; 
-		if (!r.agreement2.empty()) j["agreement2"] = r.agreement2; 
+		add_agreement_to_json(j, "agreement1", r.agreement1);
+		add_agreement_to_json(j, "agreement2", r.agreement2);
 	}
 
 	void to_json(json& j, const Results& r){
 		j = json{
 				{"id", r.cfg.id}, 
 				{"results", r.results}, 
-				{"p1_name", r.p1_name}, 
-				{"p2_name", r.p2_name}, 
-				{"p1_wins", r.p1_wins}, 
-				{"draws", r.draws}, 
-				{"p2_wins", r.cfg.n_games - r.p1_wins - r.draws}, 
+				{"p1", r.p1}, 
+				{"p2", r.p2}, 
+				{"draws", r.cfg.n_games - r.p1.won - r.p2.won}, 
 			}; 
 	}
 }
