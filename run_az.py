@@ -17,7 +17,7 @@ def setup_logs(folder = 'temp'):
 
 	return train_log, selfplay_log, play_agaisnt_log
 
-def build_network(game):
+def build_network(game, folder):
 	result = subprocess.run(['build/game_info', game], stdout= subprocess.PIPE)
 	game_info = json.loads(result.stdout.decode('utf-8'))
 
@@ -30,33 +30,34 @@ def build_network(game):
 		res_layer_number = 10
 		)
 
-	folder = "models"
-	model_name = 'traced_model_new.pt'
-	cpu_loc, gpu_loc = net.save_traced_model(folder = folder, model_name = model_name)
+	model_loc = net.save_traced_model(folder = folder, model_name = 'traced_model_new.pt')
+	model_loc = net.save_traced_model(folder = folder, model_name = '-1_traced_model_new.pt')
 
-	return cpu_loc, gpu_loc, net
+	return model_loc
 
 
 if __name__ == "__main__":
 	GAME = "CONNECTFOUR"
-	SAVE_MODELS = "models/"
-	N_GAMES = 100
-	N_ITERS = 500
+	SAVE_MODELS = "temp/models/"
+	N_GAMES = 15
+	N_ITERS = 60
 	N_GENS = 20
 
 	train_log, selfplay_log, play_agaisnt_log = setup_logs()
-	cpu_loc, gpu_loc, net = build_network(GAME)
+	model_loc = build_network(GAME, SAVE_MODELS)
 
 	for i in range(N_GENS):
 		print("Starting Selfplay")
 		subprocess.Popen(['build/selfplay', 
 						'--game={}'.format(GAME), 
-						'--model={}'.format(cpu_loc),
+						'--model={}'.format(model_loc),
 						'--n_games={}'.format(N_GAMES),
 						],  stdout = selfplay_log).wait()
-
+		
+		print("Started Training")
 		subprocess.Popen(['python3','train.py', 
-						'--model={}'.format(cpu_loc),
+						'--model={}'.format(model_loc),
 						'--folder={}'.format(SAVE_MODELS),
-						'--n_iters={}'.format(N_ITERS),
+						'--n_iter={}'.format(N_ITERS),
+						'--n_gen={}'.format(i),
 						],  stdout = train_log).wait()

@@ -10,9 +10,7 @@ import time
 import pandas as pd
 import argparse
 
-GAME_DIR = "cc/build/temp/games/"
-SAVE_CHECKPOINT = 1000
-TEST_SAVE_CHECKPOINT = 5000
+GAME_DIR = "temp/games/"
 LOSS_LOG = 20
 BATCH_SIZE = 64
 GAME_WINDOW = 0.33
@@ -40,16 +38,15 @@ def sample_batch(batch_size):
 	#print(game_files)
 	games = [json.load(open(GAME_DIR + game_f)) for game_f in game_files]
 	game_pos = [(g, np.random.randint(len(g['history']))) for g in games]
-	pos = np.array([[make_input(g['history'], i, 1), *make_target(g['winner'], g['probabilities'], i)] 
+	pos = np.array([[make_input(g['history'], i, 5), *make_target(g['winner'], g['probabilities'], i)] 
 		for (g, i) in game_pos
 		])
 
 	return list(pos[:,0]), list(pos[:,1]), list(pos[:,2])
  
-
 def train_az(model_loc, 
 	folder, n_iter = -1,
-	n_epochs = -1, 
+	n_gen = -1, 
 	lr = 0.01,
 	wd = 0.001,
 	momentum = 0.9):
@@ -76,6 +73,7 @@ def train_az(model_loc,
 		'p_loss': []
 	}
 	total_loss = 0
+
 	while True:
 		batch = sample_batch(BATCH_SIZE)
 		n_loss, nv_loss, np_loss = nn.train(batch)
@@ -84,18 +82,7 @@ def train_az(model_loc,
 		p_loss += np_loss
 		total_loss += n_loss
 		
-		
-		if i % SAVE_CHECKPOINT == 0 and i != 0:
-			print("New model saved")
-			nn.save_traced_model(folder = folder, model_name = "traced_model_new.pt")
-		
-		if i % TEST_SAVE_CHECKPOINT == 0:
-			nn.save_traced_model(folder = folder, model_name = "{}_traced_model_new.pt".format(i))
-			df = pd.DataFrame(losses)
-			df.to_csv("temp/losses_{}.csv".format(n_iter),index=False) 
-		
 		if i % LOSS_LOG == 0:
-			time.sleep(0.1)
 			print("Bacth: {}, \
 				loss: {}, \
 				value_loss: {},\
@@ -110,11 +97,13 @@ def train_az(model_loc,
 			losses['p_loss'].append(p_loss/LOSS_LOG)
 			loss, v_loss, p_loss = 0, 0, 0
 
-		if n_epochs > 0 and i > n_epochs:
-			print(n_iter)
+		if n_iter > 0 and i > n_iter:
+			if not os.path.isdir('temp/losses/'):
+				os.mkdir('temp/losses/')
+			df = pd.DataFrame(losses)
+			df.to_csv("temp/losses/{}_losses.csv".format(n_gen),index=False) 
 			nn.save_traced_model(folder = folder, model_name = "traced_model_new.pt")
-			nn.save_traced_model(folder = folder, model_name = "{}_traced_model_new.pt".format(n_iter))
-		
+			nn.save_traced_model(folder = folder, model_name = "{}_traced_model_new.pt".format(n_gen))
 
 			break
 
@@ -127,7 +116,8 @@ if __name__ == "__main__":
 	parser = argparse.ArgumentParser(description='Train network')
 	parser.add_argument('--model', help='model loc')
 	parser.add_argument('--folder', help='where to save the new models')
-	parser.add_argument('--n_iters',  type=int, help='n iters to run')
+	parser.add_argument('--n_iter',  type=int, help='n iters to run')
+	parser.add_argument('--n_gen',  type=int, help='current generation')
 	args = parser.parse_args()
 
-	train_az(args.model, args.folder, n_iter = args.n_iters)
+	train_az(args.model, args.folder, n_iter = args.n_iter, n_gen = args.n_gen)

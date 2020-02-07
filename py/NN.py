@@ -67,20 +67,13 @@ class NetWrapper(object):
             os.mkdir(folder)
 
         self.nn.eval()
+        self.nn.to(self.device)
 
-        self.nn.cpu()
-        cpu_loc = "{}/cpu_{}".format(folder, model_name)
+        model_loc = "{}/{}".format(folder, model_name)
         traced_model = torch.jit.script(self.nn)
-        traced_model.save(cpu_loc)
+        traced_model.save(model_loc)
 
-#        self.nn.cuda()
-        gpu_loc = "{}/gpu_{}".format(folder, model_name)
-        traced_model = torch.jit.script(self.nn)
-        traced_model.save(gpu_loc)
-        
-        
-
-        return cpu_loc, gpu_loc
+        return model_loc
 
     def load_model(self, path = "models/fdsmodel.pt", load_optim = False):
         cp = torch.load(path)
@@ -97,7 +90,8 @@ class NetWrapper(object):
     def load_traced_model(self, path = "models/traced_model_new.pt"):
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         self.nn = torch.jit.load(path)
-        self.nn.cuda()
+        self.nn.to(self.device)
+
         print("Netwrapper: Traced model loaded")
         return self.nn
 
