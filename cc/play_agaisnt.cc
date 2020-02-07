@@ -17,7 +17,7 @@ namespace Match{
 		std::string game_name;
 		std::string model_loc1;
 		std::string model_loc2;
-
+		
 
 	    MCTS::Config mcts = { 
 	    	2, //cpuct 
@@ -48,19 +48,22 @@ namespace Match{
 
 		void alternatePlayer(){
 			p1.swap(p2);
-			std::cout<< p1 << std::endl;
-			std::cout<< p2 << std::endl;
 			aligned = !aligned;
 		}
 	};
+
 
 	struct Result {
 		std::vector<std::vector<std::vector<float>>> history;
 		std::vector<bool> agreement1;
 		std::vector<bool> agreement2;
+		std::string p1;
+		std::string p2;
 		int winner;
 
-		Result(){};
+		Result(Match::Info m): 
+				p1(m.p1->name()), p2(m.p2->name()) {};
+
 
 		void addBoard(MatrixXf game_b){
 			Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> board(game_b);
@@ -73,7 +76,6 @@ namespace Match{
 
 		void addAgreement(std::vector<int> best_actions, int action, bool p1){
 			bool agree = std::find(best_actions.begin(), best_actions.end(), action) != best_actions.end();
-			std::cout << "p1:"<<  p1 <<" agree:"<< agree<<std::endl;
 			p1  ? this->agreement1.push_back(agree) 
 				: this->agreement2.push_back(agree);
 		}
@@ -84,23 +86,63 @@ namespace Match{
 
 	};
 
+	struct Results
+	{
+		std::vector<Match::Result> results;
+		Match::Config cfg;
+		std::string p1_name;
+		std::string p2_name;
+
+		int p1_wins = 0;
+		int draws = 0;
+
+		Results(Match::Config cfg, Match::Info m): 
+				cfg(cfg), p1_name(m.p1->name()), p2_name(m.p2->name()) {};
+
+		void addResult(Match::Result res, bool aligned){
+			results.push_back(res);
+
+			if(res.winner == 0){
+				this->draws++;	
+			}  
+			else if(aligned){
+				res.winner == 1 ? this->p1_wins++ : 0;
+			}
+			else{
+			 	res.winner != 1 ? this->p1_wins++ : 0;
+			}
+		}	
+	};
+
+
 	void to_json(json& j, const Result& r){
 		j = json{
 				{"winner", r.winner}, 
 				{"history", r.history}, 
-				{"agreement1", r.agreement1},
-				{"agreement2", r.agreement2},
+				{"p1", r.p1}, 
+				{"p2", r.p2}, 
+			}; 
+
+		if (!r.agreement1.empty()) j["agreement1"] = r.agreement1; 
+		if (!r.agreement2.empty()) j["agreement2"] = r.agreement2; 
+	}
+
+	void to_json(json& j, const Results& r){
+		j = json{
+				{"id", r.cfg.id}, 
+				{"results", r.results}, 
+				{"p1_name", r.p1_name}, 
+				{"p2_name", r.p2_name}, 
+				{"p1_wins", r.p1_wins}, 
+				{"draws", r.draws}, 
+				{"p2_wins", r.cfg.n_games - r.p1_wins - r.draws}, 
 			}; 
 	}
 }
 
 
 void save_matches(
-	std::vector<Match::Result> results, 
-	std::string id,
-	int p1_wins, 
-	int draws,
-	int p2_wins, 
+	Match::Results results,
 	std::string directory = "./temp/playagaisnt_games/"
 	){
 	
@@ -115,14 +157,7 @@ void save_matches(
 		fs::create_directories(directory);
 	}
 
-	json matches = json{
-		{"id", id}, 
-		{"results", results}, 
-		{"p1_wins", p1_wins}, 
-		{"draws", draws}, 
-		{"p2_wins", p2_wins}, 
-	};
-
+	json matches = json{results};
 	std::ofstream o(directory + "matches_" + std::to_string(t));
 	o << matches.dump() << std::endl;
 }
@@ -137,9 +172,8 @@ Match::Result play_game(Match::Info m, bool print = false){
 	int i = 0;
 	int action;
 
-	//RandomPlayer prand = RandomPlayer();
-	std::cout<< m.aligned<< std::endl;
-	Match::Result result = Match::Result();
+	Match::Result result = Match::Result(m);
+
 	while (not game->ended()){
 
 		action = (i % 2 == 0) ? p1.getAction(game)
@@ -159,39 +193,29 @@ Match::Result play_game(Match::Info m, bool print = false){
 		if (print) game->printBoard();
 	}
 
-	game->printBoard();
+	//game->printBoard();
 	result.setWinner(game->getWinner());
 
 	return result;
 }
 
 
-void player_vs_player(std::string id, Match::Info match, int n_games = 1){
-	int p1_wins = 0;
-	int draws = 0;
-	std::vector<Match::Result> results;
+void player_vs_player(Match::Config cfg, Match::Info match){
+	Match::Results results(cfg, match);
 	
-	for(int i = 0; i < n_games; i++){
-
-		Match::Result result = play_game(match, (n_games == 1));
-		results.push_back(result);
+	for(int i = 0; i < cfg.n_games; i++){
+		Match::Result result = play_game(match, (cfg.n_games == 1));
 		
-		std::cout<< "One game played, winner: " << result.winner << std::endl; 
+		std::cout<< "P1-" << match.p1->name() 
+				<< " vs" 
+				<< " P2-"<< match.p2->name()
+				<< ".Winner: " << result.winner << std::endl; 
 	
-		if(result.winner == 0){
-			draws++;	
-		}  
-		else if(match.aligned){
-			result.winner == 1 ? p1_wins++ : i;
-		}
-		else{
-		 	result.winner != 1 ? p1_wins++ : i;
-		}
-
+		results.addResult(result, match.aligned);
 		match.alternatePlayer();
 	}
 
-	save_matches(results, id, p1_wins, draws, n_games - p1_wins - draws);
+	save_matches(results);
 }
 
 Match::Config parseCommandLine(int argc, char** argv){
@@ -236,7 +260,7 @@ int main(int argc, char** argv){
 		p2,
 		perfectPlayer);
 	
-	player_vs_player(cfg.id, match, cfg.n_games);
+	player_vs_player(cfg, match);
 
 
 	perfectPlayer = std::make_shared<ConnectSolver>(""); 
@@ -244,11 +268,11 @@ int main(int argc, char** argv){
 	
 	Match::Info pmatch = Match::Info(
 		*game,
-		perfectPlayer,
+		p1,
 		randomPlayer,
 		perfectPlayer);
 	
-	player_vs_player(cfg.id, pmatch, cfg.n_games);
+	player_vs_player(cfg, pmatch);
 
 	return 0;
 }

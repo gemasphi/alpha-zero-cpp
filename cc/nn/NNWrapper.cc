@@ -21,6 +21,11 @@ void NNWrapper::shouldLoad(std::string filename){
 		this->load(filename);
 	}
 }	
+
+std::string NNWrapper::getFilename(){
+	return this->filename;
+}
+
 /*
 std::shared_mutex* NNWrapper::getModelMutex(){
 	return &(this->modelMutex);
@@ -78,6 +83,7 @@ void NNWrapper::load(std::string filename){
 		std::cout << "loading the model\n";
 		this->module = torch::jit::load(filename, this->device);
 		this->modelLastUpdate = fs::last_write_time(filename);
+		this->filename = filename;
 		netCache = std::unordered_map<std::string, NN::Output>();
 		std::cout << "model loaded\n";
 	}

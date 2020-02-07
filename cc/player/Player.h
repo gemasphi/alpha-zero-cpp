@@ -16,7 +16,7 @@ class Player
 {
 	public:
 		virtual int getAction(std::shared_ptr<Game> game) = 0;
-
+		virtual std::string name() = 0;
 };
 
 class PerfectPlayer : public Player
@@ -33,6 +33,7 @@ class ConnectSolver : public PerfectPlayer
 	public:
 		ConnectSolver(std::string opening_book);
 		std::vector<int> getBestActions(std::shared_ptr<Game> game);
+		std::string name();
 
 };
 
@@ -52,12 +53,14 @@ class HumanPlayer : public Player
 {
 	public:
 		int getAction(std::shared_ptr<Game> game);
+		std::string name();
 };
 
 class RandomPlayer : public Player
 {
 	public:
 		int getAction(std::shared_ptr<Game> game);
+		std::string name();
 };
 
 
@@ -68,6 +71,7 @@ class NNPlayer : public ProbabilisticPlayer
 	public:
 		NNPlayer(NNWrapper& nn, int deterministicAfter);
 		ArrayXf getProbabilities(std::shared_ptr<Game> game);
+		std::string name();
 
 };
 
@@ -81,6 +85,7 @@ class AlphaZeroPlayer : public ProbabilisticPlayer
 	public:
 		AlphaZeroPlayer(NNWrapper& nn, MCTS::Config mcts, int deterministicAfter);
 		ArrayXf getProbabilities(std::shared_ptr<Game> game);
+		std::string name();
 };
 
 #endif 

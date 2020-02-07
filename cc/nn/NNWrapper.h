@@ -26,6 +26,7 @@ class NNWrapper{
 		torch::Device device;
 		std::unordered_map<std::string, NN::Output> netCache;
 		
+		std::string filename;
 		fs::file_time_type modelLastUpdate;
 		mutable std::shared_mutex modelMutex;
 		//std::unique_ptr<NNObserver> observer; 
@@ -43,6 +44,7 @@ class NNWrapper{
 
 		//std::shared_mutex* getModelMutex();
 		void shouldLoad(std::string filename);
+		std::string getFilename();
 
 		
 };

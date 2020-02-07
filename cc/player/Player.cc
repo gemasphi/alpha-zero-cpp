@@ -39,12 +39,16 @@ int HumanPlayer::getAction(std::shared_ptr<Game> game){
 	return action;
 }
 
+std::string HumanPlayer::name(){
+	return "Human Player";
+}
+
 
 int PerfectPlayer::getAction(std::shared_ptr<Game> game){
 	return pickRandomElement(this->getBestActions(game));
 }
 
-ConnectSolver::ConnectSolver(std::string opening_book){
+ConnectSolver::ConnectSolver(std::string opening_book) {
   this->solver.loadBook(opening_book);	
 }
 
@@ -82,6 +86,10 @@ std::vector<int> ConnectSolver::getBestActions(std::shared_ptr<Game> game){
     return max_index;
 }
 
+std::string ConnectSolver::name(){
+	return "Perfect C4 Player";
+}
+
 ProbabilisticPlayer::ProbabilisticPlayer(int deterministicAfter) : deterministicAfter(deterministicAfter) {}
 
 int ProbabilisticPlayer::getAction(std::shared_ptr<Game> game){
@@ -107,6 +115,9 @@ ArrayXf AlphaZeroPlayer::getProbabilities(std::shared_ptr<Game> game){
 	return MCTS::simulate(game, this->nn, this->mcts); 
 }
 
+std::string AlphaZeroPlayer::name(){
+	return "AZ Player: " + this->nn.getFilename();
+}
 
 NNPlayer::NNPlayer(NNWrapper& nn, int deterministicAfter) : ProbabilisticPlayer(deterministicAfter), nn(nn) {}
 
@@ -121,6 +132,12 @@ ArrayXf NNPlayer::getProbabilities(std::shared_ptr<Game> game){
 	return valid_actions;
 }
 
+
+std::string NNPlayer::name(){
+	return "NN Player: " + this->nn.getFilename();
+}
+
+
 int RandomPlayer::getAction(std::shared_ptr<Game> game){
 	std::random_device rd;
     std::mt19937 gen(rd());
@@ -131,3 +148,7 @@ int RandomPlayer::getAction(std::shared_ptr<Game> game){
 
     return dist(gen);
 } 
+
+std::string RandomPlayer::name(){
+	return "Randomy Player";
+}
