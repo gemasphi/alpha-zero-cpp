@@ -84,8 +84,7 @@ void save_game(std::shared_ptr<Game> game, Selfplay::Result res){
 		fs::create_directories(directory);
 	}
     
-    int tid = omp_get_thread_num();
-	std::ofstream o(directory + "game_" +  std::to_string(tid) +  "_" + std::to_string(t));
+	std::ofstream o(directory + std::to_string(omp_get_thread_num()) +  "_" + std::to_string(t));
 	json jgame;
 	jgame["probabilities"] = res.probabilities;
 	jgame["winner"] = game->getCanonicalWinner();

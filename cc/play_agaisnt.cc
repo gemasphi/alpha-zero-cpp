@@ -188,9 +188,11 @@ namespace Match{
 
 void save_matches(
 	Match::Results results,
+	std::string type,
 	std::string directory = "./temp/playagaisnt_games/"
 	){
-	
+	directory = directory + "/" + type + "/";
+
 	std::time_t t = std::time(0); 
 
 	if (!fs::exists(directory)){
@@ -203,7 +205,7 @@ void save_matches(
 	}
 
 	json matches = json{results};
-	std::ofstream o(directory + "matches_" + std::to_string(t));
+	std::ofstream o(directory + std::to_string(t));
 	o << matches.dump() << std::endl;
 }
 
@@ -260,7 +262,7 @@ void player_vs_player(Match::Config cfg, Match::Info match){
 		match.alternatePlayer();
 	}
 
-	save_matches(results);
+	save_matches(results, cfg.id);
 }
 
 Match::Config parseCommandLine(int argc, char** argv){
@@ -291,6 +293,7 @@ int main(int argc, char** argv){
 		p2,
 		perfectPlayer);
 	
+	cfg.id = "vs";
 	player_vs_player(cfg, match);
 
 
@@ -302,7 +305,8 @@ int main(int argc, char** argv){
 		p1,
 		randomPlayer,
 		perfectPlayer);
-	
+
+	cfg.id = "agreement";
 	player_vs_player(cfg, pmatch);
 
 	return 0;

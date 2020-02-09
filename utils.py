@@ -5,9 +5,7 @@ import collections
 import pandas as pd
 import seaborn as sns; sns.set()
 import matplotlib.pyplot as plt
-
-GAME_DIR = "temp/games/"
-MATCHES_DIR = "temp/playagaisnt_games/"
+import subprocess
 
 def count_last_positions(dir):
 	pos = set() 
@@ -22,72 +20,74 @@ def count_last_positions(dir):
 	print(len(total_pos))
 	print(len(pos))
 
-def calc_agreement(match, who):
-	n_random_moves = 0
-	total_agreement = 0 
-	total_agreement_sum = 0
-	for result in match["results"]:
-		agreement = result[who][n_random_moves:]
-		total_agreement +=  np.count_nonzero(agreement) 
-		total_agreement_sum += len(agreement)
 
-	if total_agreement == 0:
-		return 0
-
-	return total_agreement/total_agreement_sum
-
-def matches_stats(dir):
-	stats = {
-		'draws': [],
-		'wins': [],
-		'losses': [],
-		'agreement_p1': [],
-		'agreement_p2': []
-	}
-	matches = sorted(
-		os.listdir(dir), 
-		key = lambda f: os.path.getctime("{}/{}".format(dir, f))
-		)
-	for f in matches:
-		match = json.load(open(dir + f))
-		stats['wins'].append(match['p1_wins'])
-		stats['losses'].append(match['p2_wins'])
-		stats['draws'].append(match['draws']) 
-		stats['agreement_p1'].append(calc_agreement(match,'agreement1'))
-		stats['agreement_p2'].append(calc_agreement(match,'agreement2'))
-			
-	df = pd.DataFrame(stats)
-	return df
-
-def elo_plot(file = 'elo'):
+def elo_plot(file, save_to):
 	elo = pd.read_csv(file, delimiter=r"\s+")
 	elo = elo.sort_values(by=['Name'], ascending=True)	
-	print(elo)
-	#elo = elo[elo['Name'] != -1]
-	elo.loc[elo['Name']== -1, 'Name'] = "Random" 
-	elo.loc[elo['Name']== 0, 'Name'] = 1 
-	print(elo)
 	ax = sns.catplot(x="Name", y="Elo", kind="point", data=elo)
 	ax.set(xlabel='Generation', ylabel='Elo', title= "Elo progression by generation with MCTS")
-	#ax.set(ylim=(-400, 400))
 	plt.gcf().set_size_inches(8, 5)
-	plt.savefig('elo.png')
+	plt.savefig(save_to)
 
-def agreement_plot(file="temp/agreement.cvs"):
-	agree = pd.read_csv(file, index_col=0)
-	data = {'Generation': agree.index.values*5, 'Move agreement %': agree[agree.columns[0]].values} 
+def agreement_plot(file, save_to):
+	agree = pd.read_csv(file)
+	data = {'Generation': agree.index.values*5, 'Move agreement %': agree[agree.columns[1]].values} 
 	data = pd.DataFrame(data)
-	data.loc[data['Generation']== 0, 'Generation'] = 1 
 	ax = sns.catplot(x= "Generation", y="Move agreement %", kind="point", data=data)
 	ax.set(title= "Move agreement % with the perfect player by generation")
 	plt.gcf().set_size_inches(8, 5)
-	plt.savefig('agreement.png')
+	plt.savefig(save_to)
 
 
-elo_plot()
-agreement_plot()
+def build_pgn(j,i,p1,p2, result):
+	return  '[Event "dGrand match" ]\n[Iteration "{}"]\n[Site "your house"]\n[Round "{}"]\n[White "{}"]\n[Black "{}"]\n[Result "{}"]\n random text\n\n'.format(j, i, p1, p2, result)
 
-#count_last_positions(GAME_DIR)
-#df = matches_stats(MATCHES_DIR)
-#print(df)
-#df.to_csv("temp/agreement.cvs",index=True)
+def matches_to_pgn(dir, file = "matches.pgn"):
+	all_matches = sorted(
+		os.listdir(dir), 
+		key = lambda f: os.path.getctime("{}/{}".format(dir, f))
+		)
+
+	with open(file, "w") as f:
+		j = 0
+		for match_f in all_matches:
+			match = json.load(open(dir + match_f))[0]
+			
+			i = 0
+			for result in match['results']:
+				if result['winner'] == -1:
+					res_str = '0-1'
+				elif result['winner'] == 1:
+					res_str = '1-0'
+				else:
+					res_str = '1/2-1/2'	
+				
+				s = build_pgn(j, i, result['p1'], result['p2'], res_str)
+				f.write(s)
+				i+=1
+
+			j+=1
+
+
+def matches_to_agreement(dir, file="agreement.csv"):
+	all_matches = sorted(
+		os.listdir(dir), 
+		key = lambda f: os.path.getctime("{}/{}".format(dir, f))
+		)
+
+	agreement = {
+		"player": [],
+		"agreement": []
+	}
+
+	for match_f in all_matches:
+		match = json.load(open(dir + match_f))[0]
+		agreement["player"].append(match["p1"]["name"])
+		agreement["agreement"].append(match["p1"]["move_agreement"])
+	
+	df = pd.DataFrame(agreement)
+	df.to_csv(file, index=False) 
+
+
+
+

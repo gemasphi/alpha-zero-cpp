@@ -39,10 +39,10 @@ def build_network(game, folder, nn_params):
 if __name__ == "__main__":
 	GAME = "CONNECTFOUR"
 	N_GENS = 20
-	N_SELFPLAY_GAMES = 200
-	N_PLAYAGAISNT_GAMES = 200
+	N_SELFPLAY_GAMES = 10
+	N_PLAYAGAISNT_GAMES = 10
 
-	N_ITERS = 60
+	N_ITERS = 10
 	SAVE_MODELS = "temp/models/"
 	LOSS_LOG = 20
 
@@ -82,7 +82,7 @@ if __name__ == "__main__":
 						'--loss_log={}'.format(LOSS_LOG),
 						'--nn_params={}'.format(json.dumps(NN_PARAMS)),
 						'--data={}'.format(json.dumps(DATA)),
-						], stdout = selfplay_log).wait()
+						], stdout = train_log).wait()
 
 		print("Started Play Agaisnt Match")
 		subprocess.Popen(['build/play_agaisnt', 

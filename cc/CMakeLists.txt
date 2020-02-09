@@ -16,7 +16,7 @@ add_subdirectory(${CMAKE_SOURCE_DIR}/player)
 
 
 add_executable(game_info game_info.cc)
-add_dependencies(game_info json Eigen3)
+add_dependencies(game_info json Eigen3 bayeselo)
 target_include_directories(game_info PRIVATE ${CMAKE_SOURCE_DIR}/games ${JSON_INCLUDE_DIR})
 target_link_libraries(game_info game)
 

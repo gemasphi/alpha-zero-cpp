@@ -93,3 +93,11 @@ ExternalProject_Add(cxxopts
  )
 
 set(CXXOPTS_INCLUDE_DIR  ${INSTALL_DEPENDENCIES_DIR}/include/cxxopts/)
+
+ExternalProject_Add(bayeselo
+  URL "https://www.remi-coulom.fr/Bayesian-Elo/bayeselo.tar.bz2"
+  UPDATE_COMMAND ""
+  CONFIGURE_COMMAND ""
+  BUILD_COMMAND ""
+  INSTALL_COMMAND make -C ${CMAKE_BINARY_DIR}/bayeselo-prefix/src/bayeselo
+ )
