@@ -17,9 +17,10 @@ def setup_logs(folder = 'temp'):
 
 	return train_log, selfplay_log, play_agaisnt_log
 
-def build_network(game, folder):
+def build_network(game, folder, nn_params):
 	result = subprocess.run(['build/game_info', game], stdout= subprocess.PIPE)
 	game_info = json.loads(result.stdout.decode('utf-8'))
+	nn_params['input_planes'] = game_info['input_planes']
 
 	net = NetWrapper()
 	net.build(
@@ -32,41 +33,61 @@ def build_network(game, folder):
 
 	model_loc = net.save_traced_model(folder = folder, model_name = 'traced_model_new.pt')
 	model_loc = net.save_traced_model(folder = folder, model_name = '-1_traced_model_new.pt')
-
 	return model_loc
 
 
 if __name__ == "__main__":
 	GAME = "CONNECTFOUR"
-	SAVE_MODELS = "temp/models/"
-	N_GAMES = 15
-	N_SELFPLAY_GAMES = 200
-	N_ITERS = 60
 	N_GENS = 20
+	N_SELFPLAY_GAMES = 200
+	N_PLAYAGAISNT_GAMES = 200
+
+	N_ITERS = 60
+	SAVE_MODELS = "temp/models/"
+	LOSS_LOG = 20
+
+	NN_PARAMS = {
+		"batch_size": 64,
+		"lr" : 0.01,
+		"wd" : 0.001,
+		"momentum" : 0.9,
+		"scheduler_params" : {
+		 "milestones": [5000, 10000, 20000],
+		 "gamma": 0.1 
+		}
+	}
+	DATA = {
+		"location": "temp/games/",
+		"n_games": 0.33
+	}
+
 
 	train_log, selfplay_log, play_agaisnt_log = setup_logs()
-	model_loc = build_network(GAME, SAVE_MODELS)
+	model_loc = build_network(GAME, SAVE_MODELS, NN_PARAMS)
 
 	for i in range(N_GENS):
 		print("Starting Selfplay")
 		subprocess.Popen(['build/selfplay', 
 						'--game={}'.format(GAME), 
 						'--model={}'.format(model_loc),
-						'--n_games={}'.format(N_GAMES),
-						],  stdout = selfplay_log).wait()
-		
+						'--n_games={}'.format(N_SELFPLAY_GAMES),
+						], stdout = selfplay_log).wait()
+
 		print("Started Training")
 		subprocess.Popen(['python3','train.py', 
 						'--model={}'.format(model_loc),
 						'--folder={}'.format(SAVE_MODELS),
 						'--n_iter={}'.format(N_ITERS),
 						'--n_gen={}'.format(i),
-						],  stdout = train_log).wait()
+						'--loss_log={}'.format(LOSS_LOG),
+						'--nn_params={}'.format(json.dumps(NN_PARAMS)),
+						'--data={}'.format(json.dumps(DATA)),
+						], stdout = selfplay_log).wait()
 
 		print("Started Play Agaisnt Match")
 		subprocess.Popen(['build/play_agaisnt', 
 						'--id={}'.format(i),						
-						'--n_games={}'.format(200),						
+						'--n_games={}'.format(N_PLAYAGAISNT_GAMES),						
 						'--game={}'.format(GAME),						
 						'--model_one=temp/models/{}_traced_model_new.pt'.format(i - 1),						
 						'--model_two=temp/models/{}_traced_model_new.pt'.format(i),						
