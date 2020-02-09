@@ -19,16 +19,31 @@ namespace Selfplay{
 		std::string game_name;
 		std::string model_loc;
 
-		int tempthreshold = 8;
-		float afterThresholdTemp = 1.5;
+		static inline int tempthreshold = 8;
+		static inline float afterThresholdTemp = 1.5;
 		bool print = false;
 
-		MCTS::Config mcts = { 
-    		2, //cpuct 
-    		1, //dirichlet_alpha
-    		25, // n_simulations
-    		0.1, //temp
-    	};
+		MCTS::Config mcts;
+
+		Config(cxxopts::ParseResult result) : mcts(result){
+			this->n_games = result["n_games"].as<int>();
+  			this->game_name = result["game"].as<std::string>();
+  			this->model_loc = result["model"].as<std::string>();
+  			this->tempthreshold = result["tempthreshold"].as<int>();
+  			this->afterThresholdTemp = result["afterThresholdTemp"].as<float>();
+		}
+
+		static void addCommandLineOptions(cxxopts::Options&  options){
+			options.add_options()
+				("m,model", "Model Location",  cxxopts::value<std::string>())
+  				("g,game", "Game",  cxxopts::value<std::string>())
+  				("n,n_games", "Number of games",  cxxopts::value<int>())
+  				("tempthreshold", "temp threshold",  cxxopts::value<int>()->default_value(std::to_string(tempthreshold)))
+  				("afterThresholdTemp", "after temp threshold",  cxxopts::value<float>()->default_value(std::to_string(afterThresholdTemp)))
+			;
+
+			MCTS::Config::addCommandLineOptions(options);
+		}
 	};
 
 	struct Result
@@ -128,18 +143,10 @@ void play_game(
 
 Selfplay::Config parseCommandLine(int argc, char** argv){
 	cxxopts::Options options("Selfplay", "");
-	options.add_options()
-  		("m,model", "Model Location",  cxxopts::value<std::string>())
-  		("g,game", "Game",  cxxopts::value<std::string>())
-  		("n,n_games", "Number of games",  cxxopts::value<int>())
-  	;
+	Selfplay::Config::addCommandLineOptions(options); 
 
-  	auto result = options.parse(argc, argv);
-  	Selfplay::Config cfg{
-  		.n_games = result["n_games"].as<int>(),
-  		.game_name = result["game"].as<std::string>(),
-  		.model_loc = result["model"].as<std::string>(),
-  	};
+  	cxxopts::ParseResult result = options.parse(argc, argv);
+  	Selfplay::Config cfg(result);
 
 	return cfg;
 }

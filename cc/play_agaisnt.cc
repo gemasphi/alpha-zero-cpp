@@ -19,12 +19,27 @@ namespace Match{
 		std::string model_loc2;
 		
 
-	    MCTS::Config mcts = { 
-	    	2, //cpuct 
-	    	1, //dirichlet_alpha
-	    	5, // n_simulations
-	    	1, //temp
-	    };
+	    MCTS::Config mcts;
+
+	    Config(cxxopts::ParseResult result) : mcts(result){
+			this->id = result["id"].as<std::string>();
+  			this->n_games = result["n_games"].as<int>();
+  			this->game_name = result["game"].as<std::string>();
+  			this->model_loc1 = result["model_one"].as<std::string>();
+  			this->model_loc2 = result["model_two"].as<std::string>();
+		}
+
+		static void addCommandLineOptions(cxxopts::Options&  options){
+			options.add_options()
+			  	("i,id", "Id for this test",  cxxopts::value<std::string>())
+  				("n,n_games", "Number of games",  cxxopts::value<int>())
+  				("g,game", "Game",  cxxopts::value<std::string>())
+  				("model_one", "Model Location for player one",  cxxopts::value<std::string>())
+  				("model_two", "Model Location for player two",  cxxopts::value<std::string>())
+			;
+
+			MCTS::Config::addCommandLineOptions(options);
+		}
 	};
 
 	struct Info {
@@ -249,25 +264,11 @@ void player_vs_player(Match::Config cfg, Match::Info match){
 }
 
 Match::Config parseCommandLine(int argc, char** argv){
-	cxxopts::Options options("Selfplay", "");
-	options.add_options()
-  		("i,id", "Id for this test",  cxxopts::value<std::string>())
-  		("n,n_games", "Number of games",  cxxopts::value<int>())
-  		("g,game", "Game",  cxxopts::value<std::string>())
-  		("model_one", "Model Location for player one",  cxxopts::value<std::string>())
-  		("model_two", "Model Location for player two",  cxxopts::value<std::string>())
-  	;
-  		//("n_p,n_games_perfect", "Number of games agaisnt perfectPlayer",  cxxopts::value<int>())
+	cxxopts::Options options("Player vs Player", "");
+	Match::Config::addCommandLineOptions(options); 
 
-  	auto result = options.parse(argc, argv);
-
-  	Match::Config cfg{
-  		.id = result["id"].as<std::string>(),
-  		.n_games = result["n_games"].as<int>(),
-  		.game_name = result["game"].as<std::string>(),
-  		.model_loc1 = result["model_one"].as<std::string>(),
-  		.model_loc2 = result["model_two"].as<std::string>(),
-  	};
+  	cxxopts::ParseResult result = options.parse(argc, argv);
+  	Match::Config cfg(result);
 
 	return cfg;
 }

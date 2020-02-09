@@ -48,7 +48,7 @@ if __name__ == "__main__":
 	model_loc = build_network(GAME, SAVE_MODELS)
 
 	for i in range(N_GENS):
-		"""print("Starting Selfplay")
+		print("Starting Selfplay")
 		subprocess.Popen(['build/selfplay', 
 						'--game={}'.format(GAME), 
 						'--model={}'.format(model_loc),
@@ -62,7 +62,7 @@ if __name__ == "__main__":
 						'--n_iter={}'.format(N_ITERS),
 						'--n_gen={}'.format(i),
 						],  stdout = train_log).wait()
-		"""
+
 		print("Started Play Agaisnt Match")
 		subprocess.Popen(['build/play_agaisnt', 
 						'--id={}'.format(i),						

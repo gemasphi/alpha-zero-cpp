@@ -35,13 +35,13 @@ ArrayXf MCTS::do_simulate(std::shared_ptr<GameState> root, NNWrapper& model, MCT
 
 
 ArrayXf MCTS::do_parallel_simulate(std::shared_ptr<GameState> root, NNWrapper& model, MCTS::Config cfg){
-	int simulations_to_run = cfg.n_simulations / cfg.num_threads; 
+	int simulations_to_run = cfg.n_simulations / omp_get_max_threads(); 
 	//we do more than the n_simulations currently
 	
 	for(int i = 0; i < simulations_to_run + 1; i++){
 		std::vector<std::shared_ptr<GameState>> leafs;
 		
-		#pragma omp parallel num_threads(cfg.num_threads)
+		#pragma omp parallel
 		{
 			std::shared_ptr<GameState> leaf = root->select(cfg.cpuct);
 			if (leaf->endGame()){
