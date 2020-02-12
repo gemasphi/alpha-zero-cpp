@@ -20,7 +20,7 @@ namespace Selfplay{
 		std::string model_loc;
 
 		static inline int tempthreshold = 8;
-		static inline float afterThresholdTemp = 1.5;
+		static inline float afterThresholdTemp = 1;
 		bool print = false;
 
 		MCTS::Config mcts;

@@ -28,7 +28,7 @@ def build_network(game, folder, nn_params):
 		board_dim = game_info["board_size"], 
 		output_planes = game_info["output_planes"], 
 		action_size = game_info["action_size"], 
-		res_layer_number = 10
+		res_layer_number = 15
 		)
 
 	model_loc = net.save_traced_model(folder = folder, model_name = 'traced_model_new.pt')
@@ -39,26 +39,26 @@ def build_network(game, folder, nn_params):
 if __name__ == "__main__":
 	GAME = "CONNECTFOUR"
 	N_GENS = 100
-	N_SELFPLAY_GAMES = 200
+	N_SELFPLAY_GAMES = 7168
 	N_PLAYAGAISNT_GAMES = 400
 
-	N_ITERS = 20000
+	N_ITERS = 1000
 	SAVE_MODELS = "temp/models/"
 	LOSS_LOG = 20
 
 	NN_PARAMS = {
-		"batch_size": 64,
+		"batch_size": 2048,
 		"lr" : 0.01,
 		"wd" : 0.001,
 		"momentum" : 0.9,
 		"scheduler_params" : {
-		 "milestones": [5000, 10000, 15000],
+		 "milestones": [250, 500, 750],
 		 "gamma": 0.1 
 		}
 	}
 	DATA = {
 		"location": "temp/games/",
-		"n_games": 0.66
+		"n_games": 500000
 	}
 
 

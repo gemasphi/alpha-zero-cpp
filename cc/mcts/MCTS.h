@@ -19,9 +19,9 @@ namespace MCTS
 {
 	struct Config
 	{
-		static inline float cpuct = 1.5;
+		static inline float cpuct = 3;
 		static inline float dirichlet_alpha = 1;
-		static inline float n_simulations = 600;
+		static inline float n_simulations = 800;
 		static inline float temp = 1;
 
 		//for parallel simulate
