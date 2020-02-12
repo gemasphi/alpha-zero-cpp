@@ -119,7 +119,6 @@ if __name__ == "__main__":
 	parser.add_argument('--nn_params', type=json.loads)
 	parser.add_argument('--data', type=json.loads)
 	args = parser.parse_args()
-	print(args)
 	train_az(args.model, 
 			args.folder, 
 			args.nn_params,

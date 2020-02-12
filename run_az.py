@@ -38,11 +38,11 @@ def build_network(game, folder, nn_params):
 
 if __name__ == "__main__":
 	GAME = "CONNECTFOUR"
-	N_GENS = 20
-	N_SELFPLAY_GAMES = 10
-	N_PLAYAGAISNT_GAMES = 10
+	N_GENS = 100
+	N_SELFPLAY_GAMES = 200
+	N_PLAYAGAISNT_GAMES = 400
 
-	N_ITERS = 10
+	N_ITERS = 20000
 	SAVE_MODELS = "temp/models/"
 	LOSS_LOG = 20
 
@@ -52,13 +52,13 @@ if __name__ == "__main__":
 		"wd" : 0.001,
 		"momentum" : 0.9,
 		"scheduler_params" : {
-		 "milestones": [5000, 10000, 20000],
+		 "milestones": [5000, 10000, 15000],
 		 "gamma": 0.1 
 		}
 	}
 	DATA = {
 		"location": "temp/games/",
-		"n_games": 0.33
+		"n_games": 0.66
 	}
 
 
@@ -66,6 +66,7 @@ if __name__ == "__main__":
 	model_loc = build_network(GAME, SAVE_MODELS, NN_PARAMS)
 
 	for i in range(N_GENS):
+		print("Generaton {}".format(i))
 		print("Starting Selfplay")
 		subprocess.Popen(['build/selfplay', 
 						'--game={}'.format(GAME), 
@@ -89,6 +90,6 @@ if __name__ == "__main__":
 						'--id={}'.format(i),						
 						'--n_games={}'.format(N_PLAYAGAISNT_GAMES),						
 						'--game={}'.format(GAME),						
-						'--model_one=temp/models/{}_traced_model_new.pt'.format(i - 1),						
-						'--model_two=temp/models/{}_traced_model_new.pt'.format(i),						
+						'--model_one=temp/models/{}_traced_model_new.pt'.format(i),						
+						'--model_two=temp/models/{}_traced_model_new.pt'.format(i - 1),						
 						], stdout = play_agaisnt_log).wait()
