@@ -39,26 +39,26 @@ def build_network(game, folder, nn_params):
 if __name__ == "__main__":
 	GAME = "CONNECTFOUR"
 	N_GENS = 100
-	N_SELFPLAY_GAMES = 7168
+	N_SELFPLAY_GAMES = 800
 	N_PLAYAGAISNT_GAMES = 400
 
-	N_ITERS = 1000
+	N_ITERS = 2000
 	SAVE_MODELS = "temp/models/"
 	LOSS_LOG = 20
 
 	NN_PARAMS = {
-		"batch_size": 2048,
+		"batch_size": 512,
 		"lr" : 0.01,
 		"wd" : 0.001,
 		"momentum" : 0.9,
 		"scheduler_params" : {
-		 "milestones": [250, 500, 750],
+		 "milestones": [500, 1000, 15000],
 		 "gamma": 0.1 
 		}
 	}
 	DATA = {
 		"location": "temp/games/",
-		"n_games": 500000
+		"n_games": 0.66
 	}
 
 

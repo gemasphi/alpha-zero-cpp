@@ -21,13 +21,11 @@ class NetWrapper(object):
                               ).to(self.device)
 
     def build_optim(self, lr = 0.01, wd = 0.05, momentum=0.9, scheduler_params = None):
-        self.optimizer = optim.SGD(self.nn.parameters(), lr = lr, weight_decay = wd,  momentum = momentum)
-        self.scheduler = optim.lr_scheduler.MultiStepLR(self.optimizer, 
-                                    milestones = scheduler_params['milestones'], 
-                                    gamma = scheduler_params['gamma']
-                                    )
+        self.optimizer = optim.SGD(self.nn.parameters(), lr = lr, weight_decay = wd)
+        self.scheduler = optim.lr_scheduler.CyclicLR(self.optimizer, base_lr=0.001, max_lr=0.1)
+        #self.scheduler = optim.lr_scheduler.MultiStepLR(self.optimizer, milestones = scheduler_params['milestones'], gamma = scheduler_params['gamma'])
 
-    def train(self, data,  scheduler = None, batch_size = 16, lr = 0.01 , wd = 0.015):
+    def train(self, data):
         self.nn.train()
 
         board, policy, value = data
@@ -122,7 +120,7 @@ class AlphaZeroNet(nn.Module):
         value_error = (z.float() - torch.transpose(v,0,1))**2
         policy_error = (pi.float()*p.log()).sum(1)
 
-        return  value_error.mean() - policy_error.mean(), value_error.mean(), - policy_error.mean() #no need to add the l2 regularization term as it is done in the optimizer
+        return value_error.mean() - policy_error.mean(), value_error.mean(), - policy_error.mean() #no need to add the l2 regularization term as it is done in the optimizer
 
 class ConvLayer(nn.Module):
     def __init__(self, board_dim = (), inplanes = 1, planes=128, stride=1):
@@ -169,15 +167,15 @@ class PolicyHead(nn.Module):
         self.action_size = action_size
         self.output_planes = output_planes
 
-        self.conv1 = nn.Conv2d(128, 16, kernel_size=1) # policy head
-        self.bn1 = nn.BatchNorm2d(16)
+        self.conv1 = nn.Conv2d(128, 128, kernel_size=1) # policy head
+        self.bn1 = nn.BatchNorm2d(128)
         
         self.logsoftmax = nn.LogSoftmax(dim=1)
         
         #if self.output_planes > 1:
-        self.conv2 = nn.Conv2d(16, self.output_planes, kernel_size=1) # policy head
+        self.conv2 = nn.Conv2d(128, self.output_planes, kernel_size=1) # policy head
         #else:
-        self.fc = nn.Linear(self.board_dim[0]*self.board_dim[1]*16, self.action_size)
+        self.fc = nn.Linear(self.board_dim[0]*self.board_dim[1]*128, self.action_size)
 
     def forward(self,s):
         p = F.relu(self.bn1(self.conv1(s))) # policy head
@@ -185,7 +183,7 @@ class PolicyHead(nn.Module):
         if self.output_planes > 1:
             p = self.conv2(p)
         else:
-            p = p.view(-1, self.board_dim[0]*self.board_dim[1]*16)
+            p = p.view(-1, self.board_dim[0]*self.board_dim[1]*128)
             p = self.fc(p)
             
         p = self.logsoftmax(p).exp()
@@ -199,8 +197,8 @@ class ValueHead(nn.Module):
         self.board_dim = board_dim
         self.conv = nn.Conv2d(128, 1, kernel_size=1) # value head
         self.bn = nn.BatchNorm2d(1)
-        self.fc1 = nn.Linear(self.board_dim[0]*self.board_dim[1], 16) 
-        self.fc2 = nn.Linear(16, 1)
+        self.fc1 = nn.Linear(self.board_dim[0]*self.board_dim[1], 128) 
+        self.fc2 = nn.Linear(128, 1)
 
     def forward(self,s):
         v = F.relu(self.bn(self.conv(s))) # value head

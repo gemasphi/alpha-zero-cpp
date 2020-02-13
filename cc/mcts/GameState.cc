@@ -210,12 +210,12 @@ std::vector<MatrixXf> GameState::getNetworkInput(){
 	std::vector<MatrixXf> game_state ;
 	auto dims = this->game->getBoardSize();
 	std::shared_ptr<GameState> current = shared_from_this();
-	game_state.insert(game_state.begin(), current->getCanonicalBoard());
+	game_state.insert(game_state.begin(), current->game->getBoard()*this->game->getPlayer());
 
 	for(int i = 0; i < this->game->getInputPlanes() - 1; i++){
 		if (current->parent){
 			current =  current->parent;
-			game_state.insert(game_state.begin(), current->getCanonicalBoard());
+			game_state.insert(game_state.begin(), current->game->getBoard()*this->game->getPlayer());
 		}
 		else{
 			game_state.insert(game_state.begin(), MatrixXf::Zero(dims[0], dims[1]));

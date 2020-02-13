@@ -26,7 +26,7 @@ def sample_batch(game_dir, game_window, input_planes, batch_size):
 	all_games = sorted(
 		os.listdir(game_dir), 
 		key = lambda f: os.path.getctime("{}/{}".format(game_dir, f))
-		)[:game_window]
+		)[n_games - round(n_games*game_window):]
 
 	game_size = [os.stat(game_dir + file).st_size for file in all_games]
 	game_files = np.random.choice(all_games, size = batch_size,  p = np.array(game_size)/sum(game_size))
@@ -72,7 +72,6 @@ def train_az(
 				data['n_games'], 
 				nn_params['input_planes'],
 				nn_params['batch_size'])
-
 		n_loss, nv_loss, np_loss = nn.train(batch)
 		loss += n_loss
 		v_loss += nv_loss
