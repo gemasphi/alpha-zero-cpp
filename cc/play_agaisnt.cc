@@ -125,27 +125,25 @@ namespace Match{
 		Player p1;
 		Player p2;
 
-		mutable std::shared_mutex results_lock;
 
 		Results(Match::Config cfg, Match::Info m): 
 				cfg(cfg), p1(m.p1->name()), p2(m.p2->name()) {};
 
 		void addResult(Match::Result res, bool aligned){
-			std::unique_lock lock(this->results_lock);
+			#pragma omp critical
+			{
+				results.push_back(res);
+				p1.updateAgreement(res.agreement1);
+				p2.updateAgreement(res.agreement2);
 
-			results.push_back(res);
-			p1.updateAgreement(res.agreement1);
-			p2.updateAgreement(res.agreement2);
-
-			if(res.winner != 0){
-				if(aligned){
-					res.winner == 1 ? this->p1.won++ : this->p2.won++;
-				} else {
-					res.winner == 1 ? this->p2.won++ : this->p1.won++;
+				if(res.winner != 0){
+					if(aligned){
+						res.winner == 1 ? this->p1.won++ : this->p2.won++;
+					} else {
+						res.winner == 1 ? this->p2.won++ : this->p1.won++;
+					}
 				}
 			}
-
-			lock.unlock();
 		}	
 	};
 
@@ -253,20 +251,22 @@ Match::Result play_game(Match::Info m, bool print = false){
 }
 
 
-void player_vs_player(Match::Config cfg, Match::Info match){
-	Match::Results results(cfg, match);
-	
-	#pragma omp parallel for private(match) private(cfg)
-	for(int i = 0; i < cfg.n_games; i++){
-		Match::Result result = play_game(match, (cfg.n_games == 1));
+void player_vs_player(Match::Config cfg, Match::Info match_b){
+	Match::Results results(cfg, match_b);
+	#pragma omp parallel
+	{
+		Match::Info match = match_b;
+		for(int i = 0; i < cfg.n_games /  omp_get_max_threads(); i++){
+			Match::Result result = play_game(match, (cfg.n_games == 1));
+			
+			std::cout<< "P1-" << match.p1->name() 
+					<< " vs" 
+					<< " P2-"<< match.p2->name()
+					<< ".Winner: " << result.winner << std::endl; 
 		
-		std::cout<< "P1-" << match.p1->name() 
-				<< " vs" 
-				<< " P2-"<< match.p2->name()
-				<< ".Winner: " << result.winner << std::endl; 
-	
-		results.addResult(result, match.aligned);
-		match.alternatePlayer();
+			results.addResult(result, match.aligned);
+			match.alternatePlayer();
+		}
 	}
 
 	save_matches(results, cfg.id);

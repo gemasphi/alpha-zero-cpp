@@ -25,7 +25,7 @@ ArrayXf MCTS::simulate_random(std::shared_ptr<GameState> root, NNWrapper& model,
 		}
 
 		int value = leaf->rollout();
-		leaf->expand(ArrayXf::Ones(root.game->getActionSize())/root.game->getActionSize(), cfg.dirichlet_alpha);
+		leaf->expand(ArrayXf::Ones(root->game->getActionSize())/root->game->getActionSize(), cfg.dirichlet_alpha);
 		leaf->backup(value);
 
 	}

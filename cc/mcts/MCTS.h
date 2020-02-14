@@ -53,6 +53,7 @@ namespace MCTS
 	ArrayXf simulate(std::shared_ptr<GameState> root, NNWrapper& model, MCTS::Config cfg);
 	ArrayXf do_parallel_simulate(std::shared_ptr<GameState> root, NNWrapper& model, MCTS::Config cfg);
 	ArrayXf do_simulate(std::shared_ptr<GameState> root, NNWrapper& model, MCTS::Config cfg);
+	ArrayXf simulate_random(std::shared_ptr<GameState> root, NNWrapper& model, MCTS::Config cfg);
 
 }
 

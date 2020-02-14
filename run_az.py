@@ -68,7 +68,7 @@ if __name__ == "__main__":
 	NN_PARAMS['input_planes'] = 5
 
 	for i in range(N_GENS):
-		i = i + 16
+		"""i = i + 16
 		print("Generation {}".format(i))
 		print("Starting Selfplay")
 
@@ -93,15 +93,16 @@ if __name__ == "__main__":
 						], stdout = train_log).wait()
 		print("{} iters trained: {}".format(N_ITERS, time.time() - start_time))
 		
-		"""if i % 3 == 0:
-			print("Started Play Agaisnt Match")
-			start_time = time.time()
-			subprocess.Popen(['build/play_agaisnt', 
-							'--id={}'.format(i),						
-							'--n_games={}'.format(N_PLAYAGAISNT_GAMES),						
-							'--game={}'.format(GAME),						
-							'--model_one=temp/models/{}_traced_model_new.pt'.format(i),						
-							'--model_two=temp/models/{}_traced_model_new.pt'.format(i - 1),						
-							], stdout = play_agaisnt_log)
 		"""
-		#print("{} games played: {}".format(N_PLAYAGAISNT_GAMES*2, time.time() - start_time))
+		print("Started Play Agaisnt Match")
+		start_time = time.time()
+		subprocess.Popen(['build/play_agaisnt', 
+						'--id={}'.format(i),						
+						'--n_games={}'.format(N_PLAYAGAISNT_GAMES),						
+						'--game={}'.format(GAME),						
+						'--model_one=temp/models/{}_traced_model_new.pt'.format(i),						
+						'--model_two=temp/models/{}_traced_model_new.pt'.format(i - 1),						
+						], stdout = play_agaisnt_log).wait()
+
+
+		print("{} games played: {}".format(N_PLAYAGAISNT_GAMES*2, time.time() - start_time))
