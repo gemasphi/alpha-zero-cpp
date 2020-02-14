@@ -12,6 +12,28 @@ ArrayXf MCTS::simulate(std::shared_ptr<GameState> root, NNWrapper& model, MCTS::
 						: do_simulate(root, model, cfg);  
 }
 
+
+ArrayXf MCTS::simulate_random(std::shared_ptr<GameState> root, NNWrapper& model, MCTS::Config cfg){
+	std::shared_ptr<GameState> leaf; 
+
+	for (int i = 0; i < cfg.n_simulations + 1; i++){
+		leaf = root->select(cfg.cpuct);
+
+		if (leaf->endGame()){
+			leaf->backup(leaf->getWinner()*root->getPlayer());
+			continue;
+		}
+
+		int value = leaf->rollout();
+		leaf->expand(ArrayXf::Ones(root.game->getActionSize())/root.game->getActionSize(), cfg.dirichlet_alpha);
+		leaf->backup(value);
+
+	}
+
+	return root->getSearchPolicy(cfg.temp);
+}
+
+
 ArrayXf MCTS::do_simulate(std::shared_ptr<GameState> root, NNWrapper& model, MCTS::Config cfg){
 	std::shared_ptr<GameState> leaf; 
 

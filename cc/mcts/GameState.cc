@@ -68,6 +68,25 @@ void GameState::expand(ArrayXf p, float dirichlet_alpha){
 	omp_unset_lock(&(this->writelock));
 }
 
+int pickAction(ArrayXf p){
+	static std::random_device rd;
+    static std::mt19937 gen(rd());
+	
+	std::discrete_distribution<> dist(p.data(),p.data() +  p.size());
+    return dist(gen);
+}
+
+int GameState::rollout(){
+	std::shared_ptr<Game> temp_game = std::move(this->game->copy());
+	while(!temp_game->ended()) {
+		ArrayXf poss = temp_game->getPossibleActions();
+		temp_game->play(pickAction(poss));
+	}
+
+	return temp_game->getWinner()*this->getPlayer();
+}	
+
+
 void GameState::backup(float v, int n){
 	std::shared_ptr<GameState> current = shared_from_this();
 	while (current->parent){

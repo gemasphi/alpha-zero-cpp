@@ -22,7 +22,7 @@ class NetWrapper(object):
 
     def build_optim(self, lr = 0.01, wd = 0.05, momentum=0.9, scheduler_params = None):
         self.optimizer = optim.SGD(self.nn.parameters(), lr = lr, weight_decay = wd)
-        self.scheduler = optim.lr_scheduler.CyclicLR(self.optimizer, base_lr=0.001, max_lr=0.1)
+        self.scheduler = optim.lr_scheduler.CyclicLR(self.optimizer, base_lr=0.0001, max_lr=0.05)
         #self.scheduler = optim.lr_scheduler.MultiStepLR(self.optimizer, milestones = scheduler_params['milestones'], gamma = scheduler_params['gamma'])
 
     def train(self, data):

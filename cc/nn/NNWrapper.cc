@@ -18,7 +18,9 @@ void NNWrapper::shouldLoad(std::string filename){
 	fs::file_time_type last_update = fs::last_write_time(filename);
 
 	if (this->modelLastUpdate != last_update){
+		std::cout << "New model found" << std::endl;
 		this->load(filename);
+
 	}
 }	
 
