@@ -16,7 +16,6 @@ class GameState : public std::enable_shared_from_this<GameState>
 {
 	private:
 		int action;
-		std::shared_ptr<GameState> parent;
 		bool isExpanded = false;
 		ArrayXf childW;
 		ArrayXf childP;
@@ -33,11 +32,14 @@ class GameState : public std::enable_shared_from_this<GameState>
 		int getBestAction(float cpuct);
 		std::shared_ptr<GameState> play(int action);
 		ArrayXf dirichlet_distribution(ArrayXf alpha);
+		float value = -2;
+		float rollout_v = -2;
 		
 	public:
+		std::shared_ptr<GameState> parent;
 		std::shared_ptr<Game> game;
 		std::vector<std::shared_ptr<GameState>> children;
-		
+
 		GameState(std::shared_ptr<Game> game, int action, std::shared_ptr<GameState> parent);
 		GameState(std::shared_ptr<Game> game); //root node constructor
 		
@@ -46,7 +48,7 @@ class GameState : public std::enable_shared_from_this<GameState>
 		std::shared_ptr<GameState> select(float cpuct);
 		void expand(ArrayXf p, float dirichlet_alpha);
 		void backup(float v, int n = 1);
-		int rollout();
+		float rollout();
 		ArrayXf getSearchPolicy(float temp);
 		
 		//these call the game directly

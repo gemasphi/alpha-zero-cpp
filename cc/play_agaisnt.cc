@@ -291,9 +291,9 @@ int main(int argc, char** argv){
 
 	NNWrapper nn1 =  NNWrapper(cfg.model_loc1);
 	NNWrapper nn2 =  NNWrapper(cfg.model_loc2);
-	std::shared_ptr<AlphaZeroPlayer> p1 = std::make_shared<AlphaZeroPlayer>(nn1, cfg.mcts, 3);
-	//std::shared_ptr<AlphaZeroPlayer> p2 = std::make_shared<AlphaZeroPlayer>(nn2, cfg.mcts, 3);
-	std::shared_ptr<HumanPlayer> p2 = std::make_shared<HumanPlayer>();
+	std::shared_ptr<AlphaZeroPlayer> p1 = std::make_shared<AlphaZeroPlayer>(nn1, cfg.mcts, 0);
+	std::shared_ptr<AlphaZeroPlayer> p2 = std::make_shared<AlphaZeroPlayer>(nn2, cfg.mcts, 0);
+	//std::shared_ptr<RandomPlayer> p2 = std::make_shared<RandomPlayer>();
 	
 	std::shared_ptr<PerfectPlayer> perfectPlayer;
 

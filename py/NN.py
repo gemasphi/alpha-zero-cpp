@@ -34,6 +34,8 @@ class NetWrapper(object):
         self.optimizer.zero_grad()
         
         v, p = self.nn(board)
+        print(p)
+        print(v)
         loss, v_loss, p_loss = self.nn.loss((v, p), (value, policy))
         loss.backward()
 
@@ -57,7 +59,6 @@ class NetWrapper(object):
 
         torch.save({
             'model_state_dict': self.nn.state_dict(),
-            'optimizer_state_dict': self.optimizer.state_dict(),
             }, "{}/{}".format(folder, model_name))
 
     def save_traced_model(self, folder = "models", model_name = "model.pt"):
@@ -73,7 +74,7 @@ class NetWrapper(object):
 
         return model_loc
 
-    def load_model(self, path = "models/fdsmodel.pt", load_optim = False):
+    def load_model(self, path = "temp/models/model_new.pt", load_optim = False):
         cp = torch.load(path)
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         self.nn.load_state_dict(cp['model_state_dict'])

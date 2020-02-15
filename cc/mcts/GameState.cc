@@ -36,7 +36,10 @@ std::ostream& operator<<(std::ostream& os, const GameState& gs)
     os  << "Child N\n" << gs.childN.format(CleanFmt)  << std::endl
     	<< "Child P\n" << gs.childP.format(CleanFmt)  << std::endl
     	<< "Child W\n" << gs.childW.format(CleanFmt)  << std::endl
-    	<< "Action " << gs.action << std::endl
+    	<< "Action: " << gs.action << std::endl
+    	<< "Value: " << gs.value << std::endl
+    	<< "Rollout: " << gs.rollout_v << std::endl
+    	<< "Next Player: " << gs.game->getPlayer() << std::endl
     	<< "Board\n" << gs.game->getBoard() << std::endl;
     
     return os;
@@ -72,25 +75,32 @@ void GameState::expand(ArrayXf p, float dirichlet_alpha){
 }
 
 
-int GameState::rollout(){
+float GameState::rollout(){
 	static std::random_device rd;
     static std::mt19937 gen(rd());
 	
-	
-	std::shared_ptr<Game> temp_game = std::move(this->game->copy());
-	while(!temp_game->ended()) {
-		ArrayXf poss = temp_game->getPossibleActions();
-		std::discrete_distribution<> dist(poss.data(),poss.data() +  poss.size());
-		
-		temp_game->play(dist(gen));
-	}
+	float total_rollout = 0;
 
-	return temp_game->getWinner()*this->getPlayer();
+	for (int i = 0; i < 25; i++){
+		std::shared_ptr<Game> temp_game = std::move(this->game->copy());
+		while(!temp_game->ended()) {
+			ArrayXf poss = temp_game->getPossibleActions();
+			std::discrete_distribution<> dist(poss.data(),poss.data() +  poss.size());
+			
+			temp_game->play(dist(gen));
+		}
+
+		total_rollout += temp_game->getWinner();
+ 	}
+ 	this->rollout_v = total_rollout/25; 
+
+	return this->rollout_v;
 }	
 
 
 void GameState::backup(float v, int n /*= 1*/){
 	std::shared_ptr<GameState> current = shared_from_this();
+	this->value = v;
 	while (current->parent){
 		omp_set_lock(&(this->writelock));
 		current->updateN(n);

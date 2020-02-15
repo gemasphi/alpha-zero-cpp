@@ -20,17 +20,17 @@ ArrayXf MCTS::simulate_random(std::shared_ptr<Game> game, MCTS::Config cfg){
 		leaf = root->select(cfg.cpuct);
 
 		if (leaf->endGame()){
-			leaf->backup(leaf->getWinner()*root->getPlayer());
+			leaf->backup(leaf->getWinner()*leaf->parent->getPlayer());
 			continue;
 		}
 
 		int value = leaf->rollout();
 		leaf->expand(ArrayXf::Ones(root->game->getActionSize())/root->game->getActionSize(), cfg.dirichlet_alpha);
-		leaf->backup(value);
+		leaf->backup(value*leaf->parent->getPlayer());
 
-		tree_to_dot(root);
 	}
 
+//	tree_to_dot(root);
 	return root->getSearchPolicy(cfg.temp);
 }
 
@@ -42,7 +42,7 @@ ArrayXf MCTS::do_simulate(std::shared_ptr<GameState> root, NNWrapper& model, MCT
 		leaf = root->select(cfg.cpuct);
 
 		if (leaf->endGame()){
-			leaf->backup(leaf->getWinner()*root->getPlayer());
+			leaf->backup(leaf->getWinner()*leaf->parent->getPlayer());
 			continue;
 		}
 
@@ -68,7 +68,7 @@ ArrayXf MCTS::do_parallel_simulate(std::shared_ptr<GameState> root, NNWrapper& m
 		{
 			std::shared_ptr<GameState> leaf = root->select(cfg.cpuct);
 			if (leaf->endGame()){
-				leaf->backup(leaf->getWinner());
+				leaf->backup(leaf->getWinner()*leaf->parent->getPlayer());
 			}
 			else{
 				leaf->addVirtualLoss(cfg.vloss);

@@ -48,12 +48,13 @@ set(CATCH_INCLUDE_DIR  ${INSTALL_DEPENDENCIES_DIR}/include/catch/)
 add_library(Catch INTERFACE)
 target_include_directories(Catch INTERFACE ${CATCH_INCLUDE_DIR})
 
-#https://download.pytorch.org/libtorch/nightly/cpu/libtorch-shared-with-deps-latest.zip
+#https://download.pytorch.org/libtorch/nightly/cu101/libtorch-shared-with-deps-latest.zip
+
 list(APPEND CMAKE_PREFIX_PATH ${CMAKE_BINARY_DIR}/libtorch)
 find_package(Torch)
 if(NOT Torch_FOUND)
-  file(DOWNLOAD 
-    https://download.pytorch.org/libtorch/nightly/cu101/libtorch-shared-with-deps-latest.zip
+  file(DOWNLOAD
+    https://download.pytorch.org/libtorch/nightly/cpu/libtorch-shared-with-deps-latest.zip 
     ${CMAKE_CURRENT_BINARY_DIR}/libtorch
     TLS_VERIFY ON
   )
