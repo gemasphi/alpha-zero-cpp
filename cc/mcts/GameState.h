@@ -15,7 +15,6 @@ using namespace Eigen;
 class GameState : public std::enable_shared_from_this<GameState>
 {
 	private:
-		std::vector<std::shared_ptr<GameState>> children;
 		int action;
 		std::shared_ptr<GameState> parent;
 		bool isExpanded = false;
@@ -37,6 +36,7 @@ class GameState : public std::enable_shared_from_this<GameState>
 		
 	public:
 		std::shared_ptr<Game> game;
+		std::vector<std::shared_ptr<GameState>> children;
 		
 		GameState(std::shared_ptr<Game> game, int action, std::shared_ptr<GameState> parent);
 		GameState(std::shared_ptr<Game> game); //root node constructor

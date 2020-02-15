@@ -49,11 +49,13 @@ namespace MCTS
 		}
 	};
 
+	void tree_to_dot_aux(std::shared_ptr<GameState> root, std::stringstream& dot);
+	void tree_to_dot(std::shared_ptr<GameState> root);
 	ArrayXf simulate(std::shared_ptr<Game> game, NNWrapper& model, MCTS::Config cfg);
 	ArrayXf simulate(std::shared_ptr<GameState> root, NNWrapper& model, MCTS::Config cfg);
 	ArrayXf do_parallel_simulate(std::shared_ptr<GameState> root, NNWrapper& model, MCTS::Config cfg);
 	ArrayXf do_simulate(std::shared_ptr<GameState> root, NNWrapper& model, MCTS::Config cfg);
-	ArrayXf simulate_random(std::shared_ptr<GameState> root, NNWrapper& model, MCTS::Config cfg);
+	ArrayXf simulate_random(std::shared_ptr<Game> game, MCTS::Config cfg);
 
 }
 

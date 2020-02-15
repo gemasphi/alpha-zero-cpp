@@ -57,7 +57,7 @@ bool TicTacToe::ended(){
 		Matrix<bool,Dynamic,Dynamic> playerPositions = (this->board.array() == p).cast<bool>();
 
 		if (this->findWin(playerPositions)){
-			this->winner = p * this->player;
+			this->winner = p;
 			return true;
 		};						
 	}

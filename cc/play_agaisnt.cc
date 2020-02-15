@@ -253,10 +253,12 @@ Match::Result play_game(Match::Info m, bool print = false){
 
 void player_vs_player(Match::Config cfg, Match::Info match_b){
 	Match::Results results(cfg, match_b);
-	#pragma omp parallel
+	int n_threads = cfg.n_games < omp_get_max_threads() ? 1 : omp_get_max_threads();
+	
+	#pragma omp parallel num_threads(n_threads)
 	{
 		Match::Info match = match_b;
-		for(int i = 0; i < cfg.n_games /  omp_get_max_threads(); i++){
+		for(int i = 0; i < cfg.n_games / n_threads; i++){
 			Match::Result result = play_game(match, (cfg.n_games == 1));
 			
 			std::cout<< "P1-" << match.p1->name() 
@@ -290,7 +292,8 @@ int main(int argc, char** argv){
 	NNWrapper nn1 =  NNWrapper(cfg.model_loc1);
 	NNWrapper nn2 =  NNWrapper(cfg.model_loc2);
 	std::shared_ptr<AlphaZeroPlayer> p1 = std::make_shared<AlphaZeroPlayer>(nn1, cfg.mcts, 3);
-	std::shared_ptr<AlphaZeroPlayer> p2 = std::make_shared<AlphaZeroPlayer>(nn2, cfg.mcts, 3);
+	//std::shared_ptr<AlphaZeroPlayer> p2 = std::make_shared<AlphaZeroPlayer>(nn2, cfg.mcts, 3);
+	std::shared_ptr<HumanPlayer> p2 = std::make_shared<HumanPlayer>();
 	
 	std::shared_ptr<PerfectPlayer> perfectPlayer;
 
@@ -303,7 +306,7 @@ int main(int argc, char** argv){
 	cfg.id = "vs";
 	player_vs_player(cfg, match);
 
-
+	/*
 	perfectPlayer = std::make_shared<ConnectSolver>(""); 
 	std::shared_ptr<RandomPlayer> randomPlayer = std::make_shared<RandomPlayer>();
 	
@@ -315,6 +318,6 @@ int main(int argc, char** argv){
 
 	cfg.id = "agreement";
 	player_vs_player(cfg, pmatch);
-
+	*/
 	return 0;
 }

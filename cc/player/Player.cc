@@ -112,7 +112,7 @@ AlphaZeroPlayer::AlphaZeroPlayer(NNWrapper& nn, MCTS::Config mcts, int determini
 								nn(nn), mcts(mcts){}
 
 ArrayXf AlphaZeroPlayer::getProbabilities(std::shared_ptr<Game> game){
-	return MCTS::simulate(game, this->nn, this->mcts); 
+	return MCTS::simulate_random(game, this->mcts); 
 }
 
 std::string AlphaZeroPlayer::name(){

@@ -30,10 +30,13 @@ GameState::GameState(std::shared_ptr<Game> game){
 
 std::ostream& operator<<(std::ostream& os, const GameState& gs)
 {
-    os  << "Child N\n" << gs.childN  << std::endl
-    	<< "Child P\n" << gs.childP  << std::endl
-    	<< "Child W\n" << gs.childW  << std::endl
-    	<< "Action" << gs.action 
+//	IOFormat CleanFmt(4, 0, "", "", " ", "");
+	IOFormat CleanFmt(3, DontAlignCols, ", ", ", ", "", "", "[", "]");
+    
+    os  << "Child N\n" << gs.childN.format(CleanFmt)  << std::endl
+    	<< "Child P\n" << gs.childP.format(CleanFmt)  << std::endl
+    	<< "Child W\n" << gs.childW.format(CleanFmt)  << std::endl
+    	<< "Action " << gs.action << std::endl
     	<< "Board\n" << gs.game->getBoard() << std::endl;
     
     return os;
@@ -86,7 +89,7 @@ int GameState::rollout(){
 }	
 
 
-void GameState::backup(float v, int n){
+void GameState::backup(float v, int n /*= 1*/){
 	std::shared_ptr<GameState> current = shared_from_this();
 	while (current->parent){
 		omp_set_lock(&(this->writelock));

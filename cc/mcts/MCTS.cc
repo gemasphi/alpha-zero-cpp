@@ -13,9 +13,9 @@ ArrayXf MCTS::simulate(std::shared_ptr<GameState> root, NNWrapper& model, MCTS::
 }
 
 
-ArrayXf MCTS::simulate_random(std::shared_ptr<GameState> root, NNWrapper& model, MCTS::Config cfg){
+ArrayXf MCTS::simulate_random(std::shared_ptr<Game> game, MCTS::Config cfg){
+	std::shared_ptr<GameState> root = std::make_shared<GameState>(game);
 	std::shared_ptr<GameState> leaf; 
-
 	for (int i = 0; i < cfg.n_simulations + 1; i++){
 		leaf = root->select(cfg.cpuct);
 
@@ -28,6 +28,7 @@ ArrayXf MCTS::simulate_random(std::shared_ptr<GameState> root, NNWrapper& model,
 		leaf->expand(ArrayXf::Ones(root->game->getActionSize())/root->game->getActionSize(), cfg.dirichlet_alpha);
 		leaf->backup(value);
 
+		tree_to_dot(root);
 	}
 
 	return root->getSearchPolicy(cfg.temp);
@@ -95,5 +96,26 @@ ArrayXf MCTS::do_parallel_simulate(std::shared_ptr<GameState> root, NNWrapper& m
 }
 	
 
+
+void MCTS::tree_to_dot_aux(std::shared_ptr<GameState> root, std::stringstream& dot){
+	for (auto &child : root->children){
+		if (child){
+			dot <<"    \""<< *root <<"\" -> \""<< *child <<"\";\n"; 
+			tree_to_dot_aux(child, dot);
+		}
+	}
+} 
+
+void MCTS::tree_to_dot(std::shared_ptr<GameState> root){
+	std::stringstream dot;
+	dot << "digraph BST {\n";
+    dot << "    node [fontname=\"Arial\"];\n";
+
+	tree_to_dot_aux(root, dot);
+
+    dot << "}\n";
+
+    std::cout << dot.str();
+}
 
 

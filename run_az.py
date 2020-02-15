@@ -37,7 +37,7 @@ def build_network(game, folder, nn_params):
 
 
 if __name__ == "__main__":
-	GAME = "CONNECTFOUR"
+	GAME = "TICTACTOE"
 	N_GENS = 150
 	N_SELFPLAY_GAMES = 200
 	N_PLAYAGAISNT_GAMES = 100
@@ -63,9 +63,9 @@ if __name__ == "__main__":
 
 
 	train_log, selfplay_log, play_agaisnt_log = setup_logs()
-	#model_loc = build_network(GAME, SAVE_MODELS, NN_PARAMS)
-	model_loc = "temp/models/traced_model_new.pt"
-	NN_PARAMS['input_planes'] = 5
+	model_loc = build_network(GAME, SAVE_MODELS, NN_PARAMS)
+	#model_loc = "temp/models/traced_model_new.pt"
+	#NN_PARAMS['input_planes'] = 5
 
 	for i in range(N_GENS):
 		"""i = i + 16
