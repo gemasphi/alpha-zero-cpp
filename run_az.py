@@ -28,7 +28,7 @@ def build_network(game, folder, nn_params):
 		board_dim = game_info["board_size"], 
 		output_planes = game_info["output_planes"], 
 		action_size = game_info["action_size"], 
-		res_layer_number = 10
+		res_layer_number = 15
 		)
 
 	net.save_traced_model(folder = folder, model_name = '-1_traced_model_new.pt')
@@ -38,11 +38,11 @@ def build_network(game, folder, nn_params):
 
 if __name__ == "__main__":
 	GAME = "TICTACTOE"
-	N_GENS = 1
-	N_SELFPLAY_GAMES = 800
+	N_GENS = 20
+	N_SELFPLAY_GAMES = 300
 	N_PLAYAGAISNT_GAMES = 100
 
-	N_ITERS = 1000
+	N_ITERS = 5000
 	SAVE_MODELS = "temp/models/"
 	LOSS_LOG = 5
 
@@ -52,7 +52,7 @@ if __name__ == "__main__":
 		"wd" : 0.0005,
 		"momentum" : 0.9,
 		"scheduler_params" : {
-		 "milestones": [250, 500, 750],
+		 "milestones": [2000, 3000, 4000],
 		 "gamma": 0.1 
 		}
 	}
@@ -63,14 +63,13 @@ if __name__ == "__main__":
 
 
 	train_log, selfplay_log, play_agaisnt_log = setup_logs()
-	#model_loc = build_network(GAME, SAVE_MODELS, NN_PARAMS)
-	model_loc = "temp/models/traced_model_new.pt"
-	NN_PARAMS['input_planes'] = 1
+	model_loc = build_network(GAME, SAVE_MODELS, NN_PARAMS)
+	#model_loc = "temp/models/traced_model_new.pt"
+	#NN_PARAMS['input_planes'] = 1
 
 	for i in range(N_GENS):
 		print("Generation {}".format(i))
 		print("Starting Selfplay")
-"""
 		start_time = time.time()
 		subprocess.Popen(['build/selfplay', 
 						'--game={}'.format(GAME), 
@@ -79,7 +78,7 @@ if __name__ == "__main__":
 						], stdout = selfplay_log).wait()
 		print("{} games generated took: {}".format(N_SELFPLAY_GAMES, time.time() - start_time))
 		print("Started Training")
-"""
+
 		start_time = time.time()
 		subprocess.Popen(['python3','train.py', 
 						'--model={}'.format(model_loc),

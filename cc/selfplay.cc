@@ -116,7 +116,7 @@ void play_game(
 	int game_length = 0;
 
 	while (not game->ended()){
-		p = MCTS::simulate_random(gs, cfg.mcts);
+		p = MCTS::simulate(gs, model, cfg.mcts);
 
 		gameResult.addBoardProbs(game->getBoard(), p);
 	

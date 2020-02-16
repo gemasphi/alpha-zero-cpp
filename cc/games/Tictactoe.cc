@@ -27,7 +27,7 @@ std::vector<int> TicTacToe::getBoardSize(){
 }
 
 int TicTacToe::getInputPlanes(){
-	return 1;
+	return 3;
 }
 
 int TicTacToe::getOutputPlanes(){
