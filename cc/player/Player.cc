@@ -95,7 +95,6 @@ ProbabilisticPlayer::ProbabilisticPlayer(int deterministicAfter) : deterministic
 int ProbabilisticPlayer::getAction(std::shared_ptr<Game> game){
 	ArrayXf p = this->getProbabilities(game);
 	int action;
-
 	if (this->howManyMovesPlayed > this->deterministicAfter){
 		p.maxCoeff(&action);
 	} else {
@@ -112,11 +111,23 @@ AlphaZeroPlayer::AlphaZeroPlayer(NNWrapper& nn, MCTS::Config mcts, int determini
 								nn(nn), mcts(mcts){}
 
 ArrayXf AlphaZeroPlayer::getProbabilities(std::shared_ptr<Game> game){
-	return MCTS::simulate_random(game, this->mcts); 
+	return MCTS::simulate(game, this->nn, this->mcts); 
 }
 
 std::string AlphaZeroPlayer::name(){
 	return "AZ Player: " + this->nn.getFilename();
+}
+
+MCTSPlayer::MCTSPlayer(MCTS::Config mcts, int deterministicAfter): 
+								ProbabilisticPlayer(deterministicAfter),
+								mcts(mcts){}
+
+ArrayXf MCTSPlayer::getProbabilities(std::shared_ptr<Game> game){
+	return MCTS::simulate_random(game, this->mcts); 
+}
+
+std::string MCTSPlayer::name(){
+	return "MCTS Player";
 }
 
 NNPlayer::NNPlayer(NNWrapper& nn, int deterministicAfter) : ProbabilisticPlayer(deterministicAfter), nn(nn) {}

@@ -74,9 +74,6 @@ int TicTacToe::getWinner(){
 	return this->winner;
 }
 
-int TicTacToe::getCanonicalWinner(){
-	return this->winner*this->player;
-}
 bool TicTacToe::findWin(Matrix<bool,Dynamic,Dynamic> playerPositions){
 	for (int i = 0; i < this->boardSize - this->inRow + 1; i++){
 		for (int j = 0; j < this->boardSize - this->inRow + 1; j++){

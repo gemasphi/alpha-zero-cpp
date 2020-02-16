@@ -14,8 +14,11 @@ ArrayXf MCTS::simulate(std::shared_ptr<GameState> root, NNWrapper& model, MCTS::
 
 
 ArrayXf MCTS::simulate_random(std::shared_ptr<Game> game, MCTS::Config cfg){
-	std::shared_ptr<GameState> root = std::make_shared<GameState>(game);
+	return simulate_random(std::make_shared<GameState>(game),cfg);
+}
+ArrayXf MCTS::simulate_random(std::shared_ptr<GameState> root, MCTS::Config cfg){
 	std::shared_ptr<GameState> leaf; 
+
 	for (int i = 0; i < cfg.n_simulations + 1; i++){
 		leaf = root->select(cfg.cpuct);
 

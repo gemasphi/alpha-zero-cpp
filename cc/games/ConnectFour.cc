@@ -86,9 +86,6 @@ int ConnectFour::getWinner(){
 	return this->winner;
 }
 
-int ConnectFour::getCanonicalWinner(){
-	return this->winner;
-}
 
 MatrixXf ConnectFour::getBoard(){
 	return this->board;

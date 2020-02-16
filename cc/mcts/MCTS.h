@@ -19,9 +19,9 @@ namespace MCTS
 {
 	struct Config
 	{
-		static inline float cpuct = 2;
+		static inline float cpuct = 1.5;
 		static inline float dirichlet_alpha = 1;
-		static inline float n_simulations = 400;
+		static inline float n_simulations = 1200;
 		static inline float temp = 1;
 
 		//for parallel simulate
@@ -56,6 +56,7 @@ namespace MCTS
 	ArrayXf do_parallel_simulate(std::shared_ptr<GameState> root, NNWrapper& model, MCTS::Config cfg);
 	ArrayXf do_simulate(std::shared_ptr<GameState> root, NNWrapper& model, MCTS::Config cfg);
 	ArrayXf simulate_random(std::shared_ptr<Game> game, MCTS::Config cfg);
+	ArrayXf simulate_random(std::shared_ptr<GameState> root, MCTS::Config cfg);
 
 }
 

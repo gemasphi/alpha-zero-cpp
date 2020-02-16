@@ -80,10 +80,20 @@ class AlphaZeroPlayer : public ProbabilisticPlayer
 	private:
 		NNWrapper& nn;
 		MCTS::Config mcts;
-		bool parallel;
 
 	public:
 		AlphaZeroPlayer(NNWrapper& nn, MCTS::Config mcts, int deterministicAfter);
+		ArrayXf getProbabilities(std::shared_ptr<Game> game);
+		std::string name();
+};
+
+class MCTSPlayer : public ProbabilisticPlayer
+{	
+	private:
+		MCTS::Config mcts;
+
+	public:
+		MCTSPlayer(MCTS::Config mcts, int deterministicAfter);
 		ArrayXf getProbabilities(std::shared_ptr<Game> game);
 		std::string name();
 };

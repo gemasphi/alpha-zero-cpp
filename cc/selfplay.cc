@@ -87,7 +87,7 @@ void save_game(std::shared_ptr<Game> game, Selfplay::Result res){
 	std::ofstream o(directory + std::to_string(omp_get_thread_num()) +  "_" + std::to_string(t));
 	json jgame;
 	jgame["probabilities"] = res.probabilities;
-	jgame["winner"] = game->getCanonicalWinner();
+	jgame["winner"] = game->getWinner();
 	jgame["history"] = res.history;
 
 	o << jgame.dump() << std::endl;
@@ -116,7 +116,7 @@ void play_game(
 	int game_length = 0;
 
 	while (not game->ended()){
-		p = MCTS::simulate(gs, model, cfg.mcts);
+		p = MCTS::simulate_random(gs, cfg.mcts);
 
 		gameResult.addBoardProbs(game->getBoard(), p);
 	

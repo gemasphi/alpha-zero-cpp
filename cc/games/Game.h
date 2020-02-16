@@ -23,7 +23,6 @@ class Game
 		virtual void play(int action) = 0;
 		virtual bool ended() = 0;
 		virtual int getWinner() = 0;
-		virtual int getCanonicalWinner() = 0;
 		virtual float getPlayer() = 0;
 		virtual ArrayXf getPossibleActions() = 0;
 		virtual MatrixXf getBoard() = 0;

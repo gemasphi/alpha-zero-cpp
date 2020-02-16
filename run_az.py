@@ -28,7 +28,7 @@ def build_network(game, folder, nn_params):
 		board_dim = game_info["board_size"], 
 		output_planes = game_info["output_planes"], 
 		action_size = game_info["action_size"], 
-		res_layer_number = 15
+		res_layer_number = 10
 		)
 
 	net.save_traced_model(folder = folder, model_name = '-1_traced_model_new.pt')
@@ -38,13 +38,13 @@ def build_network(game, folder, nn_params):
 
 if __name__ == "__main__":
 	GAME = "TICTACTOE"
-	N_GENS = 150
-	N_SELFPLAY_GAMES = 200
+	N_GENS = 1
+	N_SELFPLAY_GAMES = 800
 	N_PLAYAGAISNT_GAMES = 100
 
-	N_ITERS = 5000
+	N_ITERS = 1000
 	SAVE_MODELS = "temp/models/"
-	LOSS_LOG = 20
+	LOSS_LOG = 5
 
 	NN_PARAMS = {
 		"batch_size": 64,
@@ -52,26 +52,25 @@ if __name__ == "__main__":
 		"wd" : 0.0005,
 		"momentum" : 0.9,
 		"scheduler_params" : {
-		 "milestones": [1500, 2500, 3500],
+		 "milestones": [250, 500, 750],
 		 "gamma": 0.1 
 		}
 	}
 	DATA = {
 		"location": "temp/games/",
-		"n_games": 0.66
+		"n_games": 1
 	}
 
 
 	train_log, selfplay_log, play_agaisnt_log = setup_logs()
-	model_loc = build_network(GAME, SAVE_MODELS, NN_PARAMS)
-	#model_loc = "temp/models/traced_model_new.pt"
-	#NN_PARAMS['input_planes'] = 5
+	#model_loc = build_network(GAME, SAVE_MODELS, NN_PARAMS)
+	model_loc = "temp/models/traced_model_new.pt"
+	NN_PARAMS['input_planes'] = 1
 
 	for i in range(N_GENS):
-		"""i = i + 16
 		print("Generation {}".format(i))
 		print("Starting Selfplay")
-
+"""
 		start_time = time.time()
 		subprocess.Popen(['build/selfplay', 
 						'--game={}'.format(GAME), 
@@ -79,8 +78,8 @@ if __name__ == "__main__":
 						'--n_games={}'.format(N_SELFPLAY_GAMES),
 						], stdout = selfplay_log).wait()
 		print("{} games generated took: {}".format(N_SELFPLAY_GAMES, time.time() - start_time))
-
 		print("Started Training")
+"""
 		start_time = time.time()
 		subprocess.Popen(['python3','train.py', 
 						'--model={}'.format(model_loc),
@@ -106,3 +105,4 @@ if __name__ == "__main__":
 
 
 		print("{} games played: {}".format(N_PLAYAGAISNT_GAMES*2, time.time() - start_time))
+		"""

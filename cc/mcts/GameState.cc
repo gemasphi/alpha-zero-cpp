@@ -80,19 +80,23 @@ float GameState::rollout(){
     static std::mt19937 gen(rd());
 	
 	float total_rollout = 0;
+	int n_rollouts = 50;
 
-	for (int i = 0; i < 25; i++){
+	#pragma omp parallel for
+	for (int i = 0; i < n_rollouts; i++){
 		std::shared_ptr<Game> temp_game = std::move(this->game->copy());
 		while(!temp_game->ended()) {
-			ArrayXf poss = temp_game->getPossibleActions();
-			std::discrete_distribution<> dist(poss.data(),poss.data() +  poss.size());
+			ArrayXf valid = getValidActions(ArrayXf::Ones(game->getActionSize()), 
+				temp_game->getPossibleActions());
+
+			std::discrete_distribution<> dist(valid.data(),valid.data() +  valid.size());
 			
 			temp_game->play(dist(gen));
 		}
 
 		total_rollout += temp_game->getWinner();
  	}
- 	this->rollout_v = total_rollout/25; 
+ 	this->rollout_v = total_rollout/n_rollouts; 
 
 	return this->rollout_v;
 }	

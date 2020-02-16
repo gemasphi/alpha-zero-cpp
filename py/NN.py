@@ -34,8 +34,6 @@ class NetWrapper(object):
         self.optimizer.zero_grad()
         
         v, p = self.nn(board)
-        print(p)
-        print(v)
         loss, v_loss, p_loss = self.nn.loss((v, p), (value, policy))
         loss.backward()
 
