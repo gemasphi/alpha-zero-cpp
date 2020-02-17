@@ -37,18 +37,18 @@ def build_network(game, folder, nn_params):
 
 
 if __name__ == "__main__":
-	GAME = "TICTACTOE"
-	N_GENS = 20
-	N_SELFPLAY_GAMES = 300
+	GAME = "CONNECTFOUR"
+	N_GENS = 500
+	N_SELFPLAY_GAMES = 200
 	N_PLAYAGAISNT_GAMES = 100
 
-	N_ITERS = 5000
+	N_ITERS = 50000
 	SAVE_MODELS = "temp/models/"
 	LOSS_LOG = 5
 
 	NN_PARAMS = {
-		"batch_size": 64,
-		"lr" : 0.001,
+		"batch_size": 1024,
+		"lr" : 0.01,
 		"wd" : 0.0005,
 		"momentum" : 0.9,
 		"scheduler_params" : {
@@ -58,7 +58,7 @@ if __name__ == "__main__":
 	}
 	DATA = {
 		"location": "temp/games/",
-		"n_games": 1
+		"n_games": 0.66
 	}
 
 
@@ -75,7 +75,7 @@ if __name__ == "__main__":
 						'--game={}'.format(GAME), 
 						'--model={}'.format(model_loc),
 						'--n_games={}'.format(N_SELFPLAY_GAMES),
-						], stdout = selfplay_log).wait()
+						], stdout = selfplay_log)
 		print("{} games generated took: {}".format(N_SELFPLAY_GAMES, time.time() - start_time))
 		print("Started Training")
 

@@ -95,6 +95,7 @@ ProbabilisticPlayer::ProbabilisticPlayer(int deterministicAfter) : deterministic
 int ProbabilisticPlayer::getAction(std::shared_ptr<Game> game){
 	ArrayXf p = this->getProbabilities(game);
 	int action;
+	//std::cout<< p<<"\n fds" << std::endl;
 	if (this->howManyMovesPlayed > this->deterministicAfter){
 		p.maxCoeff(&action);
 	} else {
