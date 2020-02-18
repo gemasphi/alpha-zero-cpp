@@ -9,7 +9,7 @@
 using namespace Eigen;
 
 ConnectFour::ConnectFour(){
-	this->width = 5;
+	this->width = 6;
 	this->height = 5;
 	this->board = MatrixXf::Zero(this->height, this->width);
 	this->player = 1;

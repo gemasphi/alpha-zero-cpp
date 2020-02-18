@@ -37,7 +37,7 @@ def build_network(game, folder, nn_params):
 
 
 if __name__ == "__main__":
-	GAME = "TICTACTOE"
+	GAME = "CONNECTFOUR"
 	N_GENS = 20
 	N_SELFPLAY_GAMES = 300
 	N_PLAYAGAISNT_GAMES = 100

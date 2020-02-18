@@ -19,14 +19,16 @@ class TicTacToe : public Game
 
 	public:
 		TicTacToe();
-		std::unique_ptr<Game> copy();
-		void printBoard();
+		
 		int getInputPlanes();
 		int getOutputPlanes();
+		std::vector<int> getBoardSize();
+		
+		std::unique_ptr<Game> copy();
+		void printBoard();
 		void play(int action);
 		bool ended();
 		int getWinner();
-		std::vector<int> getBoardSize();
 		float getPlayer();
 		bool findWin(Matrix<bool,Dynamic,Dynamic> playerPositions);
 		bool isWin(Matrix<bool,Dynamic,Dynamic> smallBoard);

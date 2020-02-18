@@ -6,6 +6,7 @@ import pandas as pd
 import seaborn as sns; sns.set()
 import matplotlib.pyplot as plt
 import subprocess
+import game_py
 
 def count_last_positions(dir):
 	pos = set() 
