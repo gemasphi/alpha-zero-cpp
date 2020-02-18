@@ -86,9 +86,7 @@ float GameState::rollout(){
 	for (int i = 0; i < n_rollouts; i++){
 		std::shared_ptr<Game> temp_game = std::move(this->game->copy());
 		while(!temp_game->ended()) {
-			ArrayXf valid = getValidActions(ArrayXf::Ones(game->getActionSize()), 
-				temp_game->getPossibleActions());
-
+			ArrayXf valid = temp_game->getPossibleActions();
 			std::discrete_distribution<> dist(valid.data(),valid.data() +  valid.size());
 			
 			temp_game->play(dist(gen));
@@ -145,6 +143,10 @@ int GameState::getBestAction(float cpuct){
 		}				
 	}
 	
+	if (action == -1){
+		std::cout<< "puct\n" <<  puct <<std::endl;
+		std::cout<< "poss\n" <<  poss <<std::endl;
+	}			
 	assert(action != -1);			
 	omp_unset_lock(&(this->writelock));
 

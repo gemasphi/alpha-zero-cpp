@@ -61,7 +61,8 @@ ArrayXf MCTS::do_simulate(std::shared_ptr<GameState> root, NNWrapper& model, MCT
 
 
 ArrayXf MCTS::do_parallel_simulate(std::shared_ptr<GameState> root, NNWrapper& model, MCTS::Config cfg){
-	int simulations_to_run = cfg.n_simulations / omp_get_max_threads(); 
+	int batch_size = omp_get_max_threads()*12;
+	int simulations_to_run = cfg.n_simulations / batch_size; 
 	//we do more than the n_simulations currently
 	
 	for(int i = 0; i < simulations_to_run + 1; i++){
