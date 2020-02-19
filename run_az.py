@@ -47,7 +47,7 @@ if __name__ == "__main__":
 	LOSS_LOG = 5
 
 	NN_PARAMS = {
-		"batch_size": 1024,
+		"batch_size": 64,
 		"lr" : 0.01,
 		"wd" : 0.0005,
 		"momentum" : 0.9,
@@ -57,8 +57,8 @@ if __name__ == "__main__":
 		}
 	}
 	DATA = {
-		"location": "temp/games/",
-		"n_games": 0.66
+		"location": "build/temp/perfect_player/",
+		"n_games": 1
 	}
 
 
@@ -70,6 +70,7 @@ if __name__ == "__main__":
 	for i in range(N_GENS):
 		print("Generation {}".format(i))
 		print("Starting Selfplay")
+		"""
 		start_time = time.time()
 		subprocess.Popen(['build/selfplay', 
 						'--game={}'.format(GAME), 
@@ -77,6 +78,7 @@ if __name__ == "__main__":
 						'--n_games={}'.format(N_SELFPLAY_GAMES),
 						], stdout = selfplay_log)
 		print("{} games generated took: {}".format(N_SELFPLAY_GAMES, time.time() - start_time))
+		"""
 		print("Started Training")
 
 		start_time = time.time()
@@ -88,7 +90,7 @@ if __name__ == "__main__":
 						'--loss_log={}'.format(LOSS_LOG),
 						'--nn_params={}'.format(json.dumps(NN_PARAMS)),
 						'--data={}'.format(json.dumps(DATA)),
-						], stdout = train_log).wait()
+						]).wait()
 		print("{} iters trained: {}".format(N_ITERS, time.time() - start_time))
 		
 		"""

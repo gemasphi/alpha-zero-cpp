@@ -1,4 +1,5 @@
 import yaml
+from py.GameSampler import Sampler,SurpervisedSampler
 from py.NN import NetWrapper
 import json 
 import os
@@ -10,34 +11,6 @@ import time
 import pandas as pd
 import argparse
 
-def make_input(history, i, t):
-	player = -1 if i % 2 == 0 else 1
-	history = np.array(history)
-	size = (t, *(history[0].shape))
-	history = np.append(np.zeros(size), history, axis = 0)
-	return player*history[i: i + t] 
-
-def make_target(winner, probs, i):
-	player = -1 if i % 2 == 0 else 1  
-	return probs[i], winner*player 
-
-def sample_batch(game_dir, game_window, input_planes, batch_size):
-	n_games = len(os.listdir(game_dir)) 
-	all_games = sorted(
-		os.listdir(game_dir), 
-		key = lambda f: os.path.getctime("{}/{}".format(game_dir, f))
-		)[n_games - round(n_games*game_window):]
-
-	game_size = [os.stat(game_dir + file).st_size for file in all_games]
-	game_files = np.random.choice(all_games, size = batch_size,  p = np.array(game_size)/sum(game_size))
-	games = [json.load(open(game_dir + game_f)) for game_f in game_files]
-	game_pos = [(g, np.random.randint(len(g['history']))) for g in games]
-	pos = np.array([[make_input(g['history'], i, input_planes), *make_target(g['winner'], g['probabilities'], i)] 
-		for (g, i) in game_pos
-		])
-
-	return list(pos[:,0]), list(pos[:,1]), list(pos[:,2])
- 
 def train_az(
 	model_loc,	
 	folder, 
@@ -66,12 +39,13 @@ def train_az(
 	}
 	total_loss = 0
 
-	while True:
-		batch = sample_batch(
+	sampler = SurpervisedSampler(
 				data['location'], 
 				data['n_games'], 
 				nn_params['input_planes'],
 				nn_params['batch_size'])
+	while True:
+		batch = sampler.sample_batch()
 		n_loss, nv_loss, np_loss = nn.train(batch)
 		loss += n_loss
 		v_loss += nv_loss

@@ -23,7 +23,7 @@ std::unique_ptr<Game> ConnectFour::copy(){
 }
 
 int ConnectFour::getInputPlanes(){
-	return 5;
+	return 1;
 }
 
 int ConnectFour::getOutputPlanes(){
@@ -35,7 +35,7 @@ int ConnectFour::getActionSize(){
 }
 
 std::vector<int> ConnectFour::getBoardSize(){
-	return {this->height, this->width};
+	return {this->width, this->height};
 }
 
 std::string ConnectFour::getPlayedMoves(){

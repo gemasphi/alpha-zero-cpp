@@ -86,6 +86,8 @@ std::vector<float> ConnectSolver::getBestScores(std::shared_ptr<Game> game){
     		}
 
     		scores.push_back(score);
+    	} else {
+    		scores.push_back(0);
     	}
     }
 
