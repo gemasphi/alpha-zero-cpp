@@ -45,21 +45,34 @@ std::string HumanPlayer::name(){
 
 
 int PerfectPlayer::getAction(std::shared_ptr<Game> game){
-	return pickRandomElement(this->getBestActions(game));
+	std::vector<float> scores = this->getBestScores(game);
+	float max_score = - std::numeric_limits<float>::max();
+	std::vector<int> max_index;
+	
+	for (unsigned int i = 0; i < scores.size(); i++){
+		if (scores[i] > max_score){
+			max_score = scores[i];
+			max_index = std::vector<int>();
+			max_index.push_back(i);
+		} else if(scores[i] == max_score){
+			max_index.push_back(i);
+		}
+	}
+
+	return pickRandomElement(max_index);
 }
 
 ConnectSolver::ConnectSolver(std::string opening_book) {
   this->solver.loadBook(opening_book);	
 }
 
-std::vector<int> ConnectSolver::getBestActions(std::shared_ptr<Game> game){
+std::vector<float> ConnectSolver::getBestScores(std::shared_ptr<Game> game){
 	std::shared_ptr<ConnectFour> c_game = std::dynamic_pointer_cast<ConnectFour>(game); 
     ArrayXf poss = c_game->getPossibleActions();
 	
-	int max_possible_score = c_game->getBoardSize()[0]*c_game->getBoardSize()[1];
-	int max_score = max_possible_score*-1;
-	std::vector<int> max_index;
-	int score;
+	float score;
+	std::vector<float> scores;
+	float max_possible_score = (c_game->getBoardSize()[0]*c_game->getBoardSize()[1])/2;
 
 	for (int i = 0; i < poss.size(); i++){
 		if (poss[i] != 0){
@@ -72,18 +85,11 @@ std::vector<int> ConnectSolver::getBestActions(std::shared_ptr<Game> game){
 	    		score = this->solver.solve(pos, false)*-1;
     		}
 
-			if (score > max_score){
-				max_score = score;
-				max_index = std::vector<int>();
-				max_index.push_back(i);
-			} else if(score == max_score){
-				max_index.push_back(i);
-			}
-
+    		scores.push_back(score);
     	}
     }
 
-    return max_index;
+    return scores;
 }
 
 std::string ConnectSolver::name(){

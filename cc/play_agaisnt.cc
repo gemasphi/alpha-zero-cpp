@@ -231,11 +231,11 @@ Match::Result play_game(Match::Info m, bool print = false){
 							  : p2.getAction(game);  
 
 
-		if (perfectPlayer) result.addAgreement(
+		/*if (perfectPlayer) result.addAgreement(
 							perfectPlayer->getBestActions(game), 
 							action, 
 							!(m.aligned) == !(i % 2 == 0));
-		
+		*/
 		game->play(action);
 		result.addBoard(game->getBoard());
 

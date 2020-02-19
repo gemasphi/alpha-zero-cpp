@@ -9,8 +9,8 @@
 using namespace Eigen;
 
 ConnectFour::ConnectFour(){
-	this->width = 6;
-	this->height = 5;
+	this->width = Position::WIDTH;
+	this->height = Position::HEIGHT;
 	this->board = MatrixXf::Zero(this->height, this->width);
 	this->player = 1;
 	this->inRow = 4;

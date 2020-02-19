@@ -23,7 +23,7 @@ class PerfectPlayer : public Player
 {
 	public:
 		int getAction(std::shared_ptr<Game> game);
-		virtual std::vector<int> getBestActions(std::shared_ptr<Game> game) = 0;
+		virtual std::vector<float> getBestScores(std::shared_ptr<Game> game) = 0;
 
 };
 
@@ -32,7 +32,7 @@ class ConnectSolver : public PerfectPlayer
 	Solver solver;
 	public:
 		ConnectSolver(std::string opening_book);
-		std::vector<int> getBestActions(std::shared_ptr<Game> game);
+		std::vector<float> getBestScores(std::shared_ptr<Game> game);
 		std::string name();
 
 };
