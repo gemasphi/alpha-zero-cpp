@@ -4,6 +4,7 @@
 #include <iostream>
 #include <random>
 #include <NNWrapper.h>
+#include <math.h>       /* isnan, sqrt */
 	
 int pickRandomElement(std::vector<int> v){
 	std::random_device random_device;   
@@ -87,7 +88,7 @@ std::vector<float> ConnectSolver::getBestScores(std::shared_ptr<Game> game){
 
     		scores.push_back(score);
     	} else {
-    		scores.push_back(0);
+    		scores.push_back(-std::numeric_limits<float>::max());
     	}
     }
 

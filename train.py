@@ -1,5 +1,5 @@
 import yaml
-from py.GameSampler import Sampler, SurpervisedSampler
+from py.GameSampler import Sampler, WholeDatasetSupervised, SurpervisedSampler
 from py.NN import NetWrapper, Stats
 import json 
 import os
@@ -11,7 +11,6 @@ import time
 import pandas as pd
 import argparse
 from dataclasses import asdict
-
 
 def train_az(
 	model_loc,	
@@ -40,9 +39,8 @@ def train_az(
 	
 	full_stats = []
 	stats = Stats()
-	i = 0
-	while True:
-		batch = sampler.sample_batch()
+
+	for i, batch in sampler.sample_batch(): 
 		stats += nn.train(batch)
 
 		if i != 0 and i % loss_log == 0:
@@ -51,17 +49,16 @@ def train_az(
 			stats = Stats()
 
 		if n_iter > 0 and i > n_iter:
-			if not os.path.isdir('temp/losses/'):
-				os.mkdir('temp/losses/')
-			df = pd.DataFrame([asdict(s) for s in full_stats])
-			df.to_csv("temp/losses/{}_losses.csv".format(n_gen),index=False) 
-			
-			nn.save_traced_model(folder = folder, model_name = "traced_model_new.pt")
-			nn.save_traced_model(folder = folder, model_name = "{}_traced_model_new.pt".format(n_gen))
-
 			break
 
-		i += 1
+	if not os.path.isdir('temp/losses/'):
+		os.mkdir('temp/losses/')
+	
+	df = pd.DataFrame([asdict(s) for s in full_stats])
+	df.to_csv("temp/losses/{}_losses.csv".format(n_gen),index=False) 
+			
+	nn.save_traced_model(folder = folder, model_name = "traced_model_new.pt")
+	nn.save_traced_model(folder = folder, model_name = "{}_traced_model_new.pt".format(n_gen))
 
 
 if __name__ == "__main__":

@@ -35,7 +35,7 @@ class Stats:
             loss: {}, \
             value_loss: {},\
             policy_loss: {} \
-            accuracy: {}".format(n_batch, 
+            accuracy: {}".format(self.n_batch, 
                             self.loss,  
                             self.value_loss,
                             self.policy_loss,
@@ -57,7 +57,7 @@ class NetWrapper(object):
 
     def build_optim(self, lr = 0.01, wd = 0.05, momentum=0.9, scheduler_params = None):
         self.optimizer = optim.SGD(self.nn.parameters(), lr = lr, weight_decay = wd)
-        self.scheduler = optim.lr_scheduler.CyclicLR(self.optimizer, base_lr=0.0001, max_lr=0.05)
+        self.scheduler = optim.lr_scheduler.CyclicLR(self.optimizer, base_lr=0.001, max_lr=0.1)
         #self.scheduler = optim.lr_scheduler.MultiStepLR(self.optimizer, milestones = scheduler_params['milestones'], gamma = scheduler_params['gamma'])
 
     def count_actions(self, predicted, label):
@@ -65,18 +65,14 @@ class NetWrapper(object):
         best_predicted_actions = torch.eq(predicted, torch.max(predicted, dim=1, keepdim=True).values)
 
         matching_actions = (best_actions*best_predicted_actions).any(dim=1)
-        print(matching_actions)
-        print(matching_actions.sum().item())
-        print(matching_actions.size(0))
-        print(matching_actions.sum().item()/matching_actions.size(0))
         return matching_actions.sum().item()/matching_actions.size(0)
 
     def train(self, data):
         self.nn.train()
 
         board, policy, value = data
+        #board, policy, value = board.to(self.device),policy.to(self.device),value.to(self.device)
         board, policy, value = torch.Tensor(board).to(self.device), torch.Tensor(policy).to(self.device), torch.Tensor(value).to(self.device)
-
         self.optimizer.zero_grad()
         
         v, p = self.nn(board)
@@ -173,7 +169,7 @@ class AlphaZeroNet(nn.Module):
         return value_error.mean() - policy_error.mean(), value_error.mean(), - policy_error.mean() #no need to add the l2 regularization term as it is done in the optimizer
 
 class ConvLayer(nn.Module):
-    def __init__(self, board_dim = (), inplanes = 1, planes=128, stride=1):
+    def __init__(self, board_dim = (), inplanes = 1, planes=256, stride=1):
         super(ConvLayer, self).__init__()
         self.inplanes = inplanes
         self.board_dim = board_dim
@@ -189,7 +185,7 @@ class ConvLayer(nn.Module):
         return s
 
 class ResLayer(nn.Module):
-    def __init__(self, inplanes=128, planes=128, stride=1):
+    def __init__(self, inplanes=256, planes=256, stride=1):
         super(ResLayer, self).__init__()
         self.conv1 = nn.Conv2d(inplanes, planes, kernel_size=3, stride=stride,
                      padding=1, bias=False)
@@ -217,15 +213,15 @@ class PolicyHead(nn.Module):
         self.action_size = action_size
         self.output_planes = output_planes
 
-        self.conv1 = nn.Conv2d(128, 128, kernel_size=1) # policy head
-        self.bn1 = nn.BatchNorm2d(128)
+        self.conv1 = nn.Conv2d(256, 256, kernel_size=1) # policy head
+        self.bn1 = nn.BatchNorm2d(256)
         
         self.logsoftmax = nn.LogSoftmax(dim=1)
         
         #if self.output_planes > 1:
-        self.conv2 = nn.Conv2d(128, self.output_planes, kernel_size=1) # policy head
+        self.conv2 = nn.Conv2d(256, self.output_planes, kernel_size=1) # policy head
         #else:
-        self.fc = nn.Linear(self.board_dim[0]*self.board_dim[1]*128, self.action_size)
+        self.fc = nn.Linear(self.board_dim[0]*self.board_dim[1]*256, self.action_size)
 
     def forward(self,s):
         p = F.relu(self.bn1(self.conv1(s))) # policy head
@@ -233,7 +229,7 @@ class PolicyHead(nn.Module):
         if self.output_planes > 1:
             p = self.conv2(p)
         else:
-            p = p.view(-1, self.board_dim[0]*self.board_dim[1]*128)
+            p = p.view(-1, self.board_dim[0]*self.board_dim[1]*256)
             p = self.fc(p)
             
         p = self.logsoftmax(p).exp()
@@ -245,10 +241,10 @@ class ValueHead(nn.Module):
     def __init__(self, board_dim = (3,3)):
         super(ValueHead, self).__init__()
         self.board_dim = board_dim
-        self.conv = nn.Conv2d(128, 1, kernel_size=1) # value head
+        self.conv = nn.Conv2d(256, 1, kernel_size=1) # value head
         self.bn = nn.BatchNorm2d(1)
-        self.fc1 = nn.Linear(self.board_dim[0]*self.board_dim[1], 128) 
-        self.fc2 = nn.Linear(128, 1)
+        self.fc1 = nn.Linear(self.board_dim[0]*self.board_dim[1], 256) 
+        self.fc2 = nn.Linear(256, 1)
 
     def forward(self,s):
         v = F.relu(self.bn(self.conv(s))) # value head

@@ -6,7 +6,7 @@
 #include <experimental/filesystem>
 #include <algorithm>
 #include <cxxopts.hpp>
-
+#include <math.h>       /* isnan, sqrt */
 using json = nlohmann::json;
 namespace fs = std::experimental::filesystem;
 
@@ -59,24 +59,19 @@ namespace Generate{
 	    	this->history.push_back(b_v);
 		}
 
-		void addProbabilityValue(std::vector<float> v_scores){
+		void addProbabilityValue(std::vector<float>& v_scores){
 			float max_score;
    			Map<ArrayXf>  scores(v_scores.data(), v_scores.size());
    			scores.maxCoeff(&max_score);
    			float value = scores[max_score] > 0 ? 1 : -1;
 
-   			//std::cout<< "max score:"<< max_score<<std::endl;
-   			//std::cout<< scores<<std::endl;
-	    	scores = scores/value;
-   			//std::cout<< "after divsion\n"<< scores<<std::endl;
+   			scores += 22;
 	    	scores = scores.max(0);
-   			//std::cout<< "min divsion\n"<< scores<<std::endl;
-	    	scores = scores / scores.sum();
-   			//std::cout<< "after norm\n"<< scores<<std::endl;
+	    	scores = exp(scores)/exp(scores).sum();
 
 	    	std::vector<float> p(scores.data(), scores.data() + scores.size());
-	    	this->probabilities.push_back(p);
 
+	    	this->probabilities.push_back(p);
 	    	this->value.push_back(value);
 		}
 
@@ -96,7 +91,6 @@ void save_game(Generate::Result res){
 	jgame["probabilities"] = res.probabilities;
 	jgame["value"] = res.value;
 	jgame["history"] = res.history;
-
 	o << jgame.dump() << std::endl;
 }
 
