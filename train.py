@@ -53,8 +53,8 @@ def train_az(
 		if n_iter > 0 and i > n_iter:
 			if not os.path.isdir('temp/losses/'):
 				os.mkdir('temp/losses/')
-			df.to_csv("temp/losses/{}_losses.csv".format(n_gen),index=False) 
 			df = pd.DataFrame([asdict(s) for s in full_stats])
+			df.to_csv("temp/losses/{}_losses.csv".format(n_gen),index=False) 
 			
 			nn.save_traced_model(folder = folder, model_name = "traced_model_new.pt")
 			nn.save_traced_model(folder = folder, model_name = "{}_traced_model_new.pt".format(n_gen))

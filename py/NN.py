@@ -25,7 +25,7 @@ class Stats:
         return self
 
     def log(self, batch, loss_log):
-        self.batch = batch
+        self.n_batch = batch
         self.loss /= loss_log
         self.value_loss /= loss_log
         self.policy_loss /= loss_log
@@ -35,7 +35,7 @@ class Stats:
             loss: {}, \
             value_loss: {},\
             policy_loss: {} \
-            accuracy: {}".format(batch, 
+            accuracy: {}".format(n_batch, 
                             self.loss,  
                             self.value_loss,
                             self.policy_loss,

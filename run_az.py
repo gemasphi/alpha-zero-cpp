@@ -42,12 +42,12 @@ if __name__ == "__main__":
 	N_SELFPLAY_GAMES = 200
 	N_PLAYAGAISNT_GAMES = 100
 
-	N_ITERS = 50000
+	N_ITERS = 5
 	SAVE_MODELS = "temp/models/"
 	LOSS_LOG = 1
 
 	NN_PARAMS = {
-		"batch_size": 256,
+		"batch_size": 20,
 		"lr" : 0.01,
 		"wd" : 0.0005,
 		"momentum" : 0.9,
