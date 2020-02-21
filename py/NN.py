@@ -6,6 +6,41 @@ import torch.optim as optim
 import os
 import numpy as np
 from typing import Tuple
+from dataclasses import dataclass
+
+@dataclass
+class Stats:
+    loss: float = 0
+    value_loss: float = 0
+    policy_loss: float = 0
+    accuracy: float = 0
+    n_batch: int = 0
+
+    def __add__(self, other): 
+        self.loss += other.loss
+        self.value_loss += other.value_loss
+        self.policy_loss += other.policy_loss
+        self.accuracy += other.accuracy
+
+        return self
+
+    def log(self, batch, loss_log):
+        self.batch = batch
+        self.loss /= loss_log
+        self.value_loss /= loss_log
+        self.policy_loss /= loss_log
+        self.accuracy /= loss_log
+
+        print("Batch: {}, \
+            loss: {}, \
+            value_loss: {},\
+            policy_loss: {} \
+            accuracy: {}".format(batch, 
+                            self.loss,  
+                            self.value_loss,
+                            self.policy_loss,
+                            self.accuracy))
+            
 
 class NetWrapper(object):
     def __init__(self):
@@ -25,6 +60,17 @@ class NetWrapper(object):
         self.scheduler = optim.lr_scheduler.CyclicLR(self.optimizer, base_lr=0.0001, max_lr=0.05)
         #self.scheduler = optim.lr_scheduler.MultiStepLR(self.optimizer, milestones = scheduler_params['milestones'], gamma = scheduler_params['gamma'])
 
+    def count_actions(self, predicted, label):
+        best_actions = torch.eq(label, torch.max(label, dim=1, keepdim=True).values)
+        best_predicted_actions = torch.eq(predicted, torch.max(predicted, dim=1, keepdim=True).values)
+
+        matching_actions = (best_actions*best_predicted_actions).any(dim=1)
+        print(matching_actions)
+        print(matching_actions.sum().item())
+        print(matching_actions.size(0))
+        print(matching_actions.sum().item()/matching_actions.size(0))
+        return matching_actions.sum().item()/matching_actions.size(0)
+
     def train(self, data):
         self.nn.train()
 
@@ -36,11 +82,16 @@ class NetWrapper(object):
         v, p = self.nn(board)
         loss, v_loss, p_loss = self.nn.loss((v, p), (value, policy))
         loss.backward()
+        
+        count = self.count_actions(p, policy)
 
         self.optimizer.step()
         self.scheduler.step()
 
-        return loss.item(), v_loss.item(), p_loss.item()
+        return Stats(loss = loss.item(), 
+                    value_loss = v_loss.item(), 
+                    policy_loss = p_loss.item(),
+                    accuracy = count)
     
     def predict(self, board):
         self.nn.eval()

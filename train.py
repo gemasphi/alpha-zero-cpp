@@ -1,6 +1,6 @@
 import yaml
-from py.GameSampler import Sampler,SurpervisedSampler
-from py.NN import NetWrapper
+from py.GameSampler import Sampler, SurpervisedSampler
+from py.NN import NetWrapper, Stats
 import json 
 import os
 import numpy as np
@@ -10,6 +10,8 @@ import sys
 import time
 import pandas as pd
 import argparse
+from dataclasses import asdict
+
 
 def train_az(
 	model_loc,	
@@ -29,49 +31,31 @@ def train_az(
 		scheduler_params = nn_params['scheduler_params']
 	)
 
-	i = 0
-	loss, v_loss, p_loss = 0, 0, 0
-	losses = {
-		'epoch': [],
-		'loss': [],
-		'v_loss': [],
-		'p_loss': []
-	}
-	total_loss = 0
-
 	sampler = SurpervisedSampler(
 				data['location'], 
 				data['n_games'], 
 				nn_params['input_planes'],
 				nn_params['batch_size'])
+
+	
+	full_stats = []
+	stats = Stats()
+	i = 0
 	while True:
 		batch = sampler.sample_batch()
-		n_loss, nv_loss, np_loss = nn.train(batch)
-		loss += n_loss
-		v_loss += nv_loss
-		p_loss += np_loss
-		total_loss += n_loss
-		
-		if i % loss_log == 0:
-			print("Batch: {}, \
-				loss: {}, \
-				value_loss: {},\
-				policy_loss: {}".format(i, 
-								loss/loss_log,  
-								v_loss/loss_log, 
-								 p_loss/loss_log))
-			
-			losses['epoch'].append(i)
-			losses['loss'].append(loss/loss_log)
-			losses['v_loss'].append(v_loss/loss_log)
-			losses['p_loss'].append(p_loss/loss_log)
-			loss, v_loss, p_loss = 0, 0, 0
+		stats += nn.train(batch)
+
+		if i != 0 and i % loss_log == 0:
+			stats.log(i, loss_log)
+			full_stats.append(stats)
+			stats = Stats()
 
 		if n_iter > 0 and i > n_iter:
 			if not os.path.isdir('temp/losses/'):
 				os.mkdir('temp/losses/')
-			df = pd.DataFrame(losses)
 			df.to_csv("temp/losses/{}_losses.csv".format(n_gen),index=False) 
+			df = pd.DataFrame([asdict(s) for s in full_stats])
+			
 			nn.save_traced_model(folder = folder, model_name = "traced_model_new.pt")
 			nn.save_traced_model(folder = folder, model_name = "{}_traced_model_new.pt".format(n_gen))
 
@@ -79,8 +63,6 @@ def train_az(
 
 		i += 1
 
-
-	return total_loss/i
 
 if __name__ == "__main__":
 	parser = argparse.ArgumentParser(description='Train network')

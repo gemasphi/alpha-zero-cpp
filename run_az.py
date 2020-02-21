@@ -44,10 +44,10 @@ if __name__ == "__main__":
 
 	N_ITERS = 50000
 	SAVE_MODELS = "temp/models/"
-	LOSS_LOG = 5
+	LOSS_LOG = 1
 
 	NN_PARAMS = {
-		"batch_size": 64,
+		"batch_size": 256,
 		"lr" : 0.01,
 		"wd" : 0.0005,
 		"momentum" : 0.9,
