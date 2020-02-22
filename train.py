@@ -30,7 +30,7 @@ def train_az(
 		scheduler_params = nn_params['scheduler_params']
 	)
 
-	sampler = SurpervisedSampler(
+	sampler = WholeDatasetSupervised(
 				data['location'], 
 				data['n_games'], 
 				nn_params['input_planes'],
@@ -39,26 +39,26 @@ def train_az(
 	
 	full_stats = []
 	stats = Stats()
+	for _ in range(1000):
+		for i, batch in sampler.sample_batch(): 
+			stats += nn.train(batch)
 
-	for i, batch in sampler.sample_batch(): 
-		stats += nn.train(batch)
+			if i != 0 and i % loss_log == 0:
+				stats.log(i, loss_log)
+				full_stats.append(stats)
+				stats = Stats()
 
-		if i != 0 and i % loss_log == 0:
-			stats.log(i, loss_log)
-			full_stats.append(stats)
-			stats = Stats()
+			if n_iter > 0 and i > n_iter:
+				break
 
-		if n_iter > 0 and i > n_iter:
-			break
-
-	if not os.path.isdir('temp/losses/'):
-		os.mkdir('temp/losses/')
-	
-	df = pd.DataFrame([asdict(s) for s in full_stats])
-	df.to_csv("temp/losses/{}_losses.csv".format(n_gen),index=False) 
-			
-	nn.save_traced_model(folder = folder, model_name = "traced_model_new.pt")
-	nn.save_traced_model(folder = folder, model_name = "{}_traced_model_new.pt".format(n_gen))
+		if not os.path.isdir('temp/losses/'):
+			os.mkdir('temp/losses/')
+		
+		df = pd.DataFrame([asdict(s) for s in full_stats])
+		df.to_csv("temp/losses/{}_losses.csv".format(n_gen),index=False) 
+				
+		nn.save_traced_model(folder = folder, model_name = "traced_model_new.pt")
+		nn.save_traced_model(folder = folder, model_name = "{}_traced_model_new.pt".format(n_gen))
 
 
 if __name__ == "__main__":

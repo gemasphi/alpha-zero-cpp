@@ -7,6 +7,7 @@ import os
 import numpy as np
 from typing import Tuple
 from dataclasses import dataclass
+import math
 
 @dataclass
 class Stats:
@@ -168,30 +169,44 @@ class AlphaZeroNet(nn.Module):
 
         return value_error.mean() - policy_error.mean(), value_error.mean(), - policy_error.mean() #no need to add the l2 regularization term as it is done in the optimizer
 
+class Conv2dSamePadding(nn.Conv2d):
+    """ 2D Convolutions like TensorFlow """
+    def __init__(self, in_channels, out_channels, kernel_size, stride=1, dilation=1, groups=1, bias=True):
+        super().__init__(in_channels, out_channels, kernel_size, stride, 0, dilation, groups, bias)
+        self.stride = self.stride if len(self.stride) == 2 else [self.stride[0]]*2
+
+    def forward(self, x):
+        ih, iw = x.size()[-2:]
+        kh, kw = self.weight.size()[-2:]
+        sh, sw = self.stride
+        oh, ow = math.ceil(ih / sh), math.ceil(iw / sw)
+        pad_h = max((oh - 1) * self.stride[0] + (kh - 1) * self.dilation[0] + 1 - ih, 0)
+        pad_w = max((ow - 1) * self.stride[1] + (kw - 1) * self.dilation[1] + 1 - iw, 0)
+        if pad_h > 0 or pad_w > 0:
+            x = F.pad(x, [pad_w//2, pad_w - pad_w//2, pad_h//2, pad_h - pad_h//2])
+        return F.conv2d(x, self.weight, self.bias, self.stride, self.padding, self.dilation, self.groups)
+    
+
 class ConvLayer(nn.Module):
-    def __init__(self, board_dim = (), inplanes = 1, planes=256, stride=1):
+    def __init__(self, board_dim = (), inplanes = 1, planes=128, stride=1):
         super(ConvLayer, self).__init__()
         self.inplanes = inplanes
         self.board_dim = board_dim
-        print(board_dim)
-        self.conv = nn.Conv2d(inplanes, planes, kernel_size=3, stride=stride,
-                     padding=1, bias=False)
+        self.conv = Conv2dSamePadding(inplanes, planes, kernel_size=4, stride=stride)
         self.bn = nn.BatchNorm2d(planes)
 
     def forward(self, s):
         s = s.view(-1, self.inplanes, self.board_dim[0], self.board_dim[1])  # batch_size x planes x board_x x board_y
         s = F.relu(self.bn(self.conv(s)))
-
+        print(s.shape)
         return s
 
 class ResLayer(nn.Module):
-    def __init__(self, inplanes=256, planes=256, stride=1):
+    def __init__(self, inplanes=128, planes=128, stride=1):
         super(ResLayer, self).__init__()
-        self.conv1 = nn.Conv2d(inplanes, planes, kernel_size=3, stride=stride,
-                     padding=1, bias=False)
+        self.conv1 = Conv2dSamePadding(inplanes, planes, kernel_size=4, stride=stride)
         self.bn1 = nn.BatchNorm2d(planes)
-        self.conv2 = nn.Conv2d(planes, planes, kernel_size=3, stride=stride,
-                     padding=1, bias=False)
+        self.conv2 = Conv2dSamePadding(planes, planes, kernel_size=4, stride=stride)
         self.bn2 = nn.BatchNorm2d(planes)
 
     def forward(self, x):
@@ -213,15 +228,15 @@ class PolicyHead(nn.Module):
         self.action_size = action_size
         self.output_planes = output_planes
 
-        self.conv1 = nn.Conv2d(256, 256, kernel_size=1) # policy head
-        self.bn1 = nn.BatchNorm2d(256)
+        self.conv1 = Conv2dSamePadding(128, 32, kernel_size=1) # policy head
+        self.bn1 = nn.BatchNorm2d(32)
         
-        self.logsoftmax = nn.LogSoftmax(dim=1)
+        self.softmax = nn.Softmax(dim=1)
         
         #if self.output_planes > 1:
-        self.conv2 = nn.Conv2d(256, self.output_planes, kernel_size=1) # policy head
+        self.conv2 = Conv2dSamePadding(32, self.output_planes, kernel_size=1) # policy head
         #else:
-        self.fc = nn.Linear(self.board_dim[0]*self.board_dim[1]*256, self.action_size)
+        self.fc = nn.Linear(self.board_dim[0]*self.board_dim[1]*32, self.action_size)
 
     def forward(self,s):
         p = F.relu(self.bn1(self.conv1(s))) # policy head
@@ -229,10 +244,10 @@ class PolicyHead(nn.Module):
         if self.output_planes > 1:
             p = self.conv2(p)
         else:
-            p = p.view(-1, self.board_dim[0]*self.board_dim[1]*256)
+            p = p.view(-1, self.board_dim[0]*self.board_dim[1]*32)
             p = self.fc(p)
             
-        p = self.logsoftmax(p).exp()
+        p = self.softmax(p)
 
         return p
 
@@ -241,16 +256,14 @@ class ValueHead(nn.Module):
     def __init__(self, board_dim = (3,3)):
         super(ValueHead, self).__init__()
         self.board_dim = board_dim
-        self.conv = nn.Conv2d(256, 1, kernel_size=1) # value head
-        self.bn = nn.BatchNorm2d(1)
-        self.fc1 = nn.Linear(self.board_dim[0]*self.board_dim[1], 256) 
-        self.fc2 = nn.Linear(256, 1)
+        self.conv = Conv2dSamePadding(128, 32, kernel_size=1) # value head
+        self.bn = nn.BatchNorm2d(32)
+        self.fc1 = nn.Linear(self.board_dim[0]*self.board_dim[1]*32, 1) 
 
     def forward(self,s):
         v = F.relu(self.bn(self.conv(s))) # value head
-        v = v.view(-1, self.board_dim[0]*self.board_dim[1])  # batch_size X channel X height X width
+        v = v.view(-1, self.board_dim[0]*self.board_dim[1]*32)  # batch_size X channel X height X width
         v = F.relu(self.fc1(v))
-        v = torch.tanh(self.fc2(v))
         
         return v   
 
