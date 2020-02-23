@@ -19,7 +19,7 @@ def train_az(
 	data,
 	n_iter = -1, 
 	n_gen = -1,
-	loss_log = 20
+	loss_log = 80
 	):
 	nn = NetWrapper()
 	nn.load_traced_model(model_loc)
@@ -39,11 +39,14 @@ def train_az(
 	
 	full_stats = []
 	stats = Stats()
-	for _ in range(1000):
+	complete_stats = Stats()
+	for fds in range(3):
+		print("Epoch {}".format(fds))
 		for i, batch in sampler.sample_batch(): 
 			stats += nn.train(batch)
-
+			
 			if i != 0 and i % loss_log == 0:
+				complete_stats += stats
 				stats.log(i, loss_log)
 				full_stats.append(stats)
 				stats = Stats()
@@ -60,6 +63,7 @@ def train_az(
 		nn.save_traced_model(folder = folder, model_name = "traced_model_new.pt")
 		nn.save_traced_model(folder = folder, model_name = "{}_traced_model_new.pt".format(n_gen))
 
+	return complete_stats.loss
 
 if __name__ == "__main__":
 	parser = argparse.ArgumentParser(description='Train network')

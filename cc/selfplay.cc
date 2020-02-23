@@ -12,7 +12,6 @@
 using json = nlohmann::json;
 namespace fs = std::experimental::filesystem;
 
-
 namespace Selfplay{
 	struct Config {
 		int n_games;

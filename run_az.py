@@ -44,22 +44,19 @@ if __name__ == "__main__":
 
 	N_ITERS = -1
 	SAVE_MODELS = "temp/models/"
-	LOSS_LOG = 1
+	LOSS_LOG = 20
 
 	NN_PARAMS = {
-		"batch_size": 256,
-		"lr" : 0.01,
-		"wd" : 0.005,
+		"batch_size": 1024,
+		"lr" : 0.005,
+		"wd" : 0,
 		"momentum" : 0.9,
-		"scheduler_params" : {
-		 "milestones": [2000, 3000, 4000],
-		 "gamma": 0.001 
-		}
+		"scheduler_params" : {}
 	}
 
 	DATA = {
 		"location": "build/temp/perfect_player/",
-		"n_games": 1
+		"n_games": 0.5
 	}
 
 
