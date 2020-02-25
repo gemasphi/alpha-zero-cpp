@@ -53,6 +53,32 @@ NN::Output NNWrapper::maybeEvaluate(std::shared_ptr<GameState> leaf){
 
 }
 
+void NNWrapper::maybeEvaluate(std::vector<std::shared_ptr<GameState>> leafs,  
+								std::promise<std::vector<NN::Output>> &result){
+	
+	#pragma omp critical(batch)
+	{
+		this->batchSection.insert({this->batch.size(), result});
+		this->batch.insert(this->batch.end(), leafs.begin(), leafs.end());
+	}
+
+	#pragma omp critical(batch)
+	if (this->batch.size() >= this->batchSize){
+		std::vector<NN::Output> res 
+			= this->maybeEvaluate(this->batch);
+
+		for (auto& prom: this->batchSection) {
+			std::vector<NN::Output>::const_iterator first = res.begin() + prom.first;
+			std::vector<NN::Output>::const_iterator last = res.begin() + prom.first + leafs.size();
+			std::vector<NN::Output> res_slice(first, last);
+			prom.second.set_value(res_slice);
+		}
+		this->batchSection.clear();
+		this->batch.clear();
+	}
+}
+
+
 std::vector<NN::Output> NNWrapper::maybeEvaluate(std::vector<std::shared_ptr<GameState>> leafs){
 	std::vector<std::vector<MatrixXf>> _boards;
 

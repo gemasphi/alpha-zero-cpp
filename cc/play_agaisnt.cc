@@ -213,7 +213,6 @@ void save_matches(
 	o << matches.dump() << std::endl;
 }
 
-
 Match::Result play_game(Match::Info m, bool print = false){
 	std::shared_ptr<Game> game = m.game.copy();
 	Player& p1 = *(m.p1);

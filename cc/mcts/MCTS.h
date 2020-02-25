@@ -11,6 +11,7 @@
 #include <limits> 
 #include "GameState.h"
 #include <cxxopts.hpp>
+#include <future>
 
 using namespace Eigen;
 

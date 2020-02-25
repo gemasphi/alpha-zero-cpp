@@ -64,8 +64,7 @@ void GameState::expand(ArrayXf p, float dirichlet_alpha){
 	ArrayXf poss = this->game->getPossibleActions();
 
 	if (!this->parent->parent){
-		ArrayXf alpha = ArrayXf::Ones(p.size())*dirichlet_alpha;
-		ArrayXf d = dirichlet_distribution(alpha);
+		ArrayXf d = dirichlet_distribution(dirichlet_alpha, p.size());
 		p = 0.75*p + 0.25*d;
 	}
 
@@ -194,13 +193,13 @@ ArrayXf GameState::childU(float cpuct){
 			   );
 }
 
-ArrayXf GameState::dirichlet_distribution(ArrayXf alpha){
-	ArrayXf res =  ArrayXf::Zero(alpha.size());
-	std::random_device rd;
-	std::mt19937 gen(rd());
+ArrayXf GameState::dirichlet_distribution(float alpha, int size){
+	ArrayXf res =  ArrayXf::Zero(size);
+	static std::random_device rd;
+	static std::mt19937 gen(rd());
 
-	for(int i; i < alpha.size(); i++){
-		std::gamma_distribution<double> dist(alpha(i),1);
+	for(int i; i < size; i++){
+		std::gamma_distribution<double> dist(alpha, 1);
 		auto sample = dist(gen); 
 		res(i) = sample;
 	}

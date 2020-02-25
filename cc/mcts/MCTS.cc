@@ -61,15 +61,15 @@ ArrayXf MCTS::do_simulate(std::shared_ptr<GameState> root, NNWrapper& model, MCT
 
 
 ArrayXf MCTS::do_parallel_simulate(std::shared_ptr<GameState> root, NNWrapper& model, MCTS::Config cfg){
-	int batch_size = omp_get_max_threads()*12;
+	int batch_size = omp_get_max_threads();
 	int simulations_to_run = cfg.n_simulations / batch_size; 
 	//we do more than the n_simulations currently
 	
-	for(int i = 0; i < simulations_to_run + 1; i++){
+	for(int j = 0; j < simulations_to_run + 1; j++){
 		std::vector<std::shared_ptr<GameState>> leafs;
 		
-		#pragma omp parallel
-		{
+		#pragma omp parallel for
+		for(int k = 0; k < batch_size; k++){
 			std::shared_ptr<GameState> leaf = root->select(cfg.cpuct);
 			if (leaf->endGame()){
 				leaf->backup(leaf->getWinner()*leaf->parent->getPlayer());
@@ -81,12 +81,17 @@ ArrayXf MCTS::do_parallel_simulate(std::shared_ptr<GameState> root, NNWrapper& m
 				leafs.push_back(leaf);
 			}
 		}
+
 		if (leafs.size() == 0){
 			break;
 		}
-		
-		std::vector<NN::Output> res = model.maybeEvaluate(leafs);
 
+		std::promise<std::vector<NN::Output>> res_prom;
+    	std::future<std::vector<NN::Output>> res_future = res_prom.get_future();
+		
+		model.maybeEvaluate(leafs, res_prom);
+
+		std::vector<NN::Output> res =  res_future.get();
 		#pragma omp parallel for
 		for(unsigned int i = 0; i < leafs.size(); i++){
 			leafs[i]->removeVirtualLoss(cfg.vloss);

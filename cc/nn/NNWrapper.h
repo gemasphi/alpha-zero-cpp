@@ -13,7 +13,7 @@
 #include <experimental/filesystem>
 #include <mutex>  
 #include <shared_mutex>
-
+#include <future>
 
 using namespace Eigen;
 namespace fs = std::experimental::filesystem;
@@ -22,6 +22,10 @@ namespace fs = std::experimental::filesystem;
 
 class NNWrapper{
 	private:
+		std::vector<std::shared_ptr<GameState>> batch; 
+		unsigned int batchSize = 12; 
+		std::unordered_map<unsigned int, std::promise<std::vector<NN::Output>>&> batchSection;
+
 		torch::jit::script::Module module;
 		torch::Device device;
 		std::unordered_map<std::string, NN::Output> netCache;
@@ -40,6 +44,9 @@ class NNWrapper{
 		NNWrapper(std::string filename);
 		NN::Output maybeEvaluate(std::shared_ptr<GameState> leaf);
 		std::vector<NN::Output> maybeEvaluate(std::vector<std::shared_ptr<GameState>> leafs);
+		void maybeEvaluate(std::vector<std::shared_ptr<GameState>> leafs,
+							std::promise<std::vector<NN::Output>> & result);
+
 		std::vector<NN::Output> predict(NN::Input input);
 
 		//std::shared_mutex* getModelMutex();

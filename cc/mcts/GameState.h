@@ -31,7 +31,7 @@ class GameState : public std::enable_shared_from_this<GameState>
 		ArrayXf getValidActions(ArrayXf pred, ArrayXf poss);
 		int getBestAction(float cpuct);
 		std::shared_ptr<GameState> play(int action);
-		ArrayXf dirichlet_distribution(ArrayXf alpha);
+		ArrayXf dirichlet_distribution(float alpha, int size);
 		float value = -2;
 		float rollout_v = -2;
 		

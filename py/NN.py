@@ -198,7 +198,7 @@ class ConvLayer(nn.Module):
     def forward(self, s):
         s = s.view(-1, self.inplanes, self.board_dim[0], self.board_dim[1])  # batch_size x planes x board_x x board_y
         s = F.relu(self.bn(self.conv(s)))
-        print(s.shape)
+
         return s
 
 class ResLayer(nn.Module):
