@@ -40,7 +40,7 @@ def train_az(
 	full_stats = []
 	stats = Stats()
 	complete_stats = Stats()
-	for fds in range(3):
+	for fds in range(100):
 		print("Epoch {}".format(fds))
 		for i, batch in sampler.sample_batch(): 
 			stats += nn.train(batch)

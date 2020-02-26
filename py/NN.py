@@ -59,7 +59,7 @@ class NetWrapper(object):
     def build_optim(self, lr = 0.01, wd = 0.05, momentum=0.9, scheduler_params = None):
         self.optimizer = optim.SGD(self.nn.parameters(), lr = lr, weight_decay = wd)
         #self.optimizer = optim.Adam(self.nn.parameters(), lr = lr, weight_decay = wd)
-        self.scheduler = optim.lr_scheduler.CyclicLR(self.optimizer, base_lr=lr, max_lr=0.1)
+        #self.scheduler = optim.lr_scheduler.CyclicLR(self.optimizer, base_lr=lr, max_lr=0.1)
         #self.scheduler = optim.lr_scheduler.MultiStepLR(self.optimizer, milestones = scheduler_params['milestones'], gamma = scheduler_params['gamma'])
 
     def count_actions(self, predicted, label):
@@ -84,7 +84,7 @@ class NetWrapper(object):
         count = self.count_actions(p, policy)
 
         self.optimizer.step()
-        self.scheduler.step()
+        #self.scheduler.step()
 
         return Stats(loss = loss.item(), 
                     value_loss = v_loss.item(), 

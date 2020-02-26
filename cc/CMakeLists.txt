@@ -5,7 +5,7 @@ include(Dependencies.cmake)
 include_directories(SYSTEM ${EIGEN3_INCLUDE_DIR})
 
 #-Wshadow
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wpedantic")
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wpedantic -O3")
 SET(CMAKE_CXX_STANDARD 17)
 
 add_subdirectory(${CMAKE_SOURCE_DIR}/games)

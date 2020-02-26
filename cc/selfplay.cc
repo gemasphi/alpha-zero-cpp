@@ -154,28 +154,20 @@ int main(int argc, char** argv){
 
 	std::shared_ptr<Game> g = Game::create(cfg.game_name);
 	NNWrapper model = NNWrapper(cfg.model_loc);
-	int n_games = (cfg.n_games / omp_get_max_threads()) + 1;
-	
-	#pragma omp parallel
-	{	
-		int i = 0;
-		while (true){
-			play_game(g, model, cfg);
 
-			auto now = std::chrono::system_clock::now();
-			std::time_t now_time = std::chrono::system_clock::to_time_t(now);
-			std::cout<< std::ctime(&now_time) <<" Game Generated" << std::endl;
+//	#pragma omp parallel for 
+	for(unsigned int i = 0; i < cfg.n_games; i++){
+		play_game(g, model, cfg);
 
-			#pragma omp critical
-			{
-				model.shouldLoad(cfg.model_loc);
-			}		
+		auto now = std::chrono::system_clock::now();
+		std::time_t now_time = std::chrono::system_clock::to_time_t(now);
+		std::cout<< std::ctime(&now_time) <<" Game Generated" << std::endl;
 
-			i++;
-			if (n_games > 0 && i == n_games){
-				break;
-			}
-		}
+		#pragma omp critical
+		{
+			model.shouldLoad(cfg.model_loc);
+		}		
 	}
+
 	return 0;
 }

@@ -3,7 +3,6 @@ import optuna
 from py.NN import NetWrapper
 from train import train_az
 
-"{'lr': 0.010942571921826386, 'wd': 0.0012998839635123788, 'momentum': 0.002209938938990752}."
 def objective(trial):
 	lr = trial.suggest_loguniform('lr', 0.005, 0.5)
 	wd = trial.suggest_loguniform('wd', 0.001, 0.05)

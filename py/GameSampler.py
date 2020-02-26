@@ -23,14 +23,14 @@ class Sampler:
 		return probs[i], winner*player 
 
 	def sample_batch(self):
-		while True:
-			n_games = len(os.listdir(self.game_dir)) 
-			all_games = sorted(
-				os.listdir(self.game_dir), 
-				key = lambda f: os.path.getctime("{}/{}".format(self.game_dir, f))
-				)[n_games - round(n_games*self.game_window):]
+		n_games = len(os.listdir(self.game_dir)) 
+		all_games = sorted(
+			os.listdir(self.game_dir), 
+			key = lambda f: os.path.getctime("{}/{}".format(self.game_dir, f))
+			)[n_games - round(n_games*self.game_window):]
 
-			game_size = [os.stat(self.game_dir + file).st_size for file in all_games]
+		game_size = [os.stat(self.game_dir + file).st_size for file in all_games]
+		while True:
 			game_files = np.random.choice(all_games, size = self.batch_size,  p = np.array(game_size)/sum(game_size))
 			games = [json.load(open(self.game_dir + game_f)) for game_f in game_files]
 			game_pos = [(g, np.random.randint(len(g['history']))) for g in games]
@@ -38,6 +38,7 @@ class Sampler:
 				for (g, i) in game_pos
 				])
 
+			self.n_batches += 1
 			yield (self.n_batches, (list(pos[:,0]), list(pos[:,1]), list(pos[:,2])))
  
 

@@ -28,13 +28,14 @@ def build_network(game, folder, nn_params):
 		board_dim = game_info["board_size"], 
 		output_planes = game_info["output_planes"], 
 		action_size = game_info["action_size"], 
-		res_layer_number = 12
+		res_layer_number = 5
 		)
 
 	net.save_traced_model(folder = folder, model_name = '-1_traced_model_new.pt')
 	model_loc = net.save_traced_model(folder = folder, model_name = 'traced_model_new.pt')
 	return model_loc
 
+#"{'lr': 0.010942571921826386, 'wd': 0.0012998839635123788, 'momentum': 0.002209938938990752}."
 
 if __name__ == "__main__":
 	GAME = "CONNECTFOUR"
@@ -49,14 +50,14 @@ if __name__ == "__main__":
 	NN_PARAMS = {
 		"batch_size": 1024,
 		"lr" : 0.005,
-		"wd" : 0,
+		"wd" : 0.001,
 		"momentum" : 0.9,
 		"scheduler_params" : {}
 	}
 
 	DATA = {
 		"location": "build/temp/perfect_player/",
-		"n_games": 0.5
+		"n_games": 1
 	}
 
 

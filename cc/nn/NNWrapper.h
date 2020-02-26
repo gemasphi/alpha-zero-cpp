@@ -23,7 +23,7 @@ namespace fs = std::experimental::filesystem;
 class NNWrapper{
 	private:
 		std::vector<std::shared_ptr<GameState>> batch; 
-		unsigned int batchSize = 12; 
+		unsigned int batchSize = 8; 
 		std::unordered_map<unsigned int, std::promise<std::vector<NN::Output>>&> batchSection;
 
 		torch::jit::script::Module module;
