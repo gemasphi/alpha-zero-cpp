@@ -88,7 +88,6 @@ ArrayXf MCTS::do_parallel_simulate(std::shared_ptr<GameState> root, NNWrapper& m
 		
 		std::future<std::vector<NN::Output>> res_future = model.maybeEvaluate(leafs, cfg.globalBatchSize);
 		std::vector<NN::Output> res = res_future.get(); 		
-
 		#pragma omp parallel for num_threads(cfg.n_threads)
 		for(unsigned int i = 0; i < leafs.size(); i++){
 			leafs[i]->removeVirtualLoss(cfg.vloss);
@@ -97,6 +96,8 @@ ArrayXf MCTS::do_parallel_simulate(std::shared_ptr<GameState> root, NNWrapper& m
 		}
 
 	}
+
+	std::cout <<"simulation" <<std::endl;
 
 	return root->getSearchPolicy(cfg.temp);
 }

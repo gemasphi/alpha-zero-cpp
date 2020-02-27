@@ -31,6 +31,7 @@ namespace Selfplay{
   			this->model_loc = result["model"].as<std::string>();
   			this->tempthreshold = result["tempthreshold"].as<int>();
   			this->afterThresholdTemp = result["afterThresholdTemp"].as<float>();
+  			this->threads = result["selfplay_threads"].as<int>();
 		}
 
 		static void addCommandLineOptions(cxxopts::Options&  options){
@@ -158,7 +159,7 @@ int main(int argc, char** argv){
 	NNWrapper model = NNWrapper(cfg.model_loc);
 	
 	std::vector<std::thread> pool;
-
+	std::cout<< "n_threads:" << cfg.threads << std::endl;
 	for(unsigned int i = 0; i < cfg.threads; i++){
 		pool.push_back(std::thread([&cfg, &g, &model]{
 			for(unsigned int j = 0; j < cfg.n_games/cfg.threads; j++){

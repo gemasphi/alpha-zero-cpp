@@ -116,7 +116,6 @@ std::future<std::vector<NN::Output>> NNWrapper::maybeEvaluate(std::vector<std::s
 	std::promise<std::vector<NN::Output>> res_prom;
     std::future<std::vector<NN::Output>> res_future = res_prom.get_future();
 
-	std::cout << "leaf size" << leafs.size()<<std::endl;
 
     if (globalBatchSize > -1){
 		#pragma omp critical(batch)
