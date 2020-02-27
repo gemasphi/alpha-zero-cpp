@@ -32,10 +32,12 @@ struct GlobalBatch
 	}
 
 	bool isFull(int size){
+		std::cout <<"batch size"<<this->batch.size()  << ", size" << size<<std::endl;
 		return this->batch.size() >= size;
 	}
 
-	void returnValuesBySection(std::vector<NN::Output> res, unsigned int size){		 
+	void returnValuesBySection(std::vector<NN::Output> res, unsigned int size){	
+		std::cout << "reutring values" << size << std::endl;	 
 		for (auto& prom: this->sections) {
 			std::vector<NN::Output>::const_iterator first = res.begin() + prom.first;
 			std::vector<NN::Output>::const_iterator last = res.begin() + prom.first + size;

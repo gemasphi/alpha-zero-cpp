@@ -62,8 +62,8 @@ ArrayXf MCTS::do_simulate(std::shared_ptr<GameState> root, NNWrapper& model, MCT
 
 ArrayXf MCTS::do_parallel_simulate(std::shared_ptr<GameState> root, NNWrapper& model, MCTS::Config cfg){
 	int simulations_to_run = cfg.n_simulations / cfg.batchSize; 
-	omp_set_dynamic(0);
 	
+	omp_set_dynamic(0);
 	for(int j = 0; j < simulations_to_run + 1; j++){
 		std::vector<std::shared_ptr<GameState>> leafs;
 		

@@ -116,14 +116,20 @@ std::future<std::vector<NN::Output>> NNWrapper::maybeEvaluate(std::vector<std::s
 	std::promise<std::vector<NN::Output>> res_prom;
     std::future<std::vector<NN::Output>> res_future = res_prom.get_future();
 
+	std::cout << "leaf size" << leafs.size()<<std::endl;
+
     if (globalBatchSize > -1){
 		#pragma omp critical(batch)
-		this->buffer.insertBatch(leafs, std::move(res_prom));
+		{
+			this->buffer.insertBatch(leafs, std::move(res_prom));	
+    	}
 
 		#pragma omp critical(batch)
-		if (this->buffer.isFull(globalBatchSize)){
-			std::vector<NN::Output> res = this->predict(this->prepareInput(this->buffer.batch));
-			this->buffer.returnValuesBySection(res, leafs.size());
+		{
+			if (this->buffer.isFull(globalBatchSize)){
+				std::vector<NN::Output> res = this->predict(this->prepareInput(this->buffer.batch));
+				this->buffer.returnValuesBySection(res, leafs.size());
+			}
 		}
     }
     else{
