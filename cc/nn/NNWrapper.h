@@ -20,20 +20,47 @@ namespace fs = std::experimental::filesystem;
 
 //class NNObserver;   //forward declaration
 
+struct GlobalBatch
+{
+	std::vector<std::shared_ptr<GameState>> batch; 
+	std::unordered_map<unsigned int, std::promise<std::vector<NN::Output>>&> sections;
+
+	void insertBatch(std::vector<std::shared_ptr<GameState>> leafs, std::promise<std::vector<NN::Output>> res_prom){
+		this->sections.insert({this->batch.size(), res_prom});
+		this->batch.insert(this->batch.end(), leafs.begin(), leafs.end());
+		
+	}
+
+	bool isFull(int size){
+		return this->batch.size() >= size;
+	}
+
+	void returnValuesBySection(std::vector<NN::Output> res, unsigned int size){		 
+		for (auto& prom: this->sections) {
+			std::vector<NN::Output>::const_iterator first = res.begin() + prom.first;
+			std::vector<NN::Output>::const_iterator last = res.begin() + prom.first + size;
+			std::vector<NN::Output> res_slice(first, last);
+			prom.second.set_value(res_slice);
+		}
+
+		this->sections.clear();
+		this->batch.clear();
+	}
+};
+
 class NNWrapper{
 	private:
-		std::vector<std::shared_ptr<GameState>> batch; 
-		unsigned int batchSize = 8; 
-		std::unordered_map<unsigned int, std::promise<std::vector<NN::Output>>&> batchSection;
+		GlobalBatch buffer; 
 
 		torch::jit::script::Module module;
 		torch::Device device;
-		std::unordered_map<std::string, NN::Output> netCache;
+		mutable std::shared_mutex modelMutex;
 		
 		std::string filename;
 		fs::file_time_type modelLastUpdate;
-		mutable std::shared_mutex modelMutex;
 		//std::unique_ptr<NNObserver> observer; 
+		
+		std::unordered_map<std::string, NN::Output> netCache;
 		
 		bool inCache(std::string board);
 		NN::Output getCachedEl(std::string board);
@@ -42,11 +69,10 @@ class NNWrapper{
 
 	public:
 		NNWrapper(std::string filename);
-		NN::Output maybeEvaluate(std::shared_ptr<GameState> leaf);
-		std::vector<NN::Output> maybeEvaluate(std::vector<std::shared_ptr<GameState>> leafs);
-		void maybeEvaluate(std::vector<std::shared_ptr<GameState>> leafs,
-							std::promise<std::vector<NN::Output>> & result);
+		NN::Input prepareInput(std::vector<std::shared_ptr<GameState>> leafs);
 
+		NN::Output maybeEvaluate(std::shared_ptr<GameState> leaf);
+		std::future<std::vector<NN::Output>> maybeEvaluate(std::vector<std::shared_ptr<GameState>> leafs, int globalBatching);
 		std::vector<NN::Output> predict(NN::Input input);
 
 		//std::shared_mutex* getModelMutex();

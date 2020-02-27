@@ -22,6 +22,7 @@ namespace Selfplay{
 		static inline float afterThresholdTemp = 1;
 		bool print = false;
 
+		static inline int threads = 4;
 		MCTS::Config mcts;
 
 		Config(cxxopts::ParseResult result) : mcts(result){
@@ -37,6 +38,7 @@ namespace Selfplay{
 				("m,model", "Model Location",  cxxopts::value<std::string>())
   				("g,game", "Game",  cxxopts::value<std::string>())
   				("n,n_games", "Number of games",  cxxopts::value<int>())
+  				("selfplay_threads", "Number of threads for selfplay",  cxxopts::value<int>()->default_value(std::to_string(threads)))
   				("tempthreshold", "temp threshold",  cxxopts::value<int>()->default_value(std::to_string(tempthreshold)))
   				("afterThresholdTemp", "after temp threshold",  cxxopts::value<float>()->default_value(std::to_string(afterThresholdTemp)))
 			;
@@ -154,19 +156,25 @@ int main(int argc, char** argv){
 
 	std::shared_ptr<Game> g = Game::create(cfg.game_name);
 	NNWrapper model = NNWrapper(cfg.model_loc);
+	
+	std::vector<std::thread> pool;
 
-//	#pragma omp parallel for 
-	for(unsigned int i = 0; i < cfg.n_games; i++){
-		play_game(g, model, cfg);
+	for(unsigned int i = 0; i < cfg.threads; i++){
+		pool.push_back(std::thread([&cfg, &g, &model]{
+			for(unsigned int j = 0; j < cfg.n_games/cfg.threads; j++){
+				play_game(g, model, cfg);
 
-		auto now = std::chrono::system_clock::now();
-		std::time_t now_time = std::chrono::system_clock::to_time_t(now);
-		std::cout<< std::ctime(&now_time) <<" Game Generated" << std::endl;
+				auto now = std::chrono::system_clock::now();
+				std::time_t now_time = std::chrono::system_clock::to_time_t(now);
+				std::cout<< std::ctime(&now_time) <<" Game Generated" << std::endl;
 
-		#pragma omp critical
-		{
-			model.shouldLoad(cfg.model_loc);
-		}		
+				//model.shouldLoad(cfg.model_loc);
+			}
+		}));		
+	}
+
+	for(auto &thread : pool){
+		thread.join();
 	}
 
 	return 0;

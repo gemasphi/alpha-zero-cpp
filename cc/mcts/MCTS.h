@@ -27,8 +27,9 @@ namespace MCTS
 
 		//for parallel simulate
 		static inline bool parallel = true;
-		static inline bool globalBatching = false;
-		static inline int batchSize = 8;
+		static inline int globalBatchSize = -1;
+		static inline int batchSize = 4;
+		static inline int n_threads = 4;
 		static inline float vloss = 1;
 
 		Config(cxxopts::ParseResult result){
@@ -37,9 +38,10 @@ namespace MCTS
 			this->n_simulations = result["n_simulations"].as<float>();
 			this->temp = result["temp"].as<float>();
 			this->parallel = result["parallel"].as<bool>();
-			this->globalBatching = result["global_batching"].as<bool>();
 			this->batchSize = result["batch_size"].as<int>();
+			this->globalBatchSize = result["global_batch_size"].as<int>();
 			this->vloss = result["vloss"].as<float>();
+			this->n_threads = result["mcts_threads"].as<int>();
 		}
 
 		static void addCommandLineOptions(cxxopts::Options&  options){
@@ -49,8 +51,9 @@ namespace MCTS
 				("n_simulations", "Number of simulations",  cxxopts::value<float>()->default_value(std::to_string(n_simulations)))
 				("temp", "Temperature",  cxxopts::value<float>()->default_value(std::to_string(temp)))
 				("parallel", "Parallel mcts",  cxxopts::value<bool>()->default_value(std::to_string(parallel)))
-				("global_batching", "Global batching",  cxxopts::value<bool>()->default_value(std::to_string(globalBatching)))
 				("batch_size", "batch size",  cxxopts::value<int>()->default_value(std::to_string(batchSize)))
+				("global_batch_size", "global batch size",  cxxopts::value<int>()->default_value(std::to_string(globalBatchSize)))
+				("mcts_threads", "mcts threads",  cxxopts::value<int>()->default_value(std::to_string(n_threads)))
 				("vloss", "Virtual loss",  cxxopts::value<float>()->default_value(std::to_string(vloss)))
 			;
 		}

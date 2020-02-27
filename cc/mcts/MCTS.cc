@@ -62,11 +62,12 @@ ArrayXf MCTS::do_simulate(std::shared_ptr<GameState> root, NNWrapper& model, MCT
 
 ArrayXf MCTS::do_parallel_simulate(std::shared_ptr<GameState> root, NNWrapper& model, MCTS::Config cfg){
 	int simulations_to_run = cfg.n_simulations / cfg.batchSize; 
+	omp_set_dynamic(0);
 	
 	for(int j = 0; j < simulations_to_run + 1; j++){
 		std::vector<std::shared_ptr<GameState>> leafs;
 		
-		#pragma omp parallel for
+		#pragma omp parallel for num_threads(cfg.n_threads)
 		for(int k = 0; k < cfg.batchSize; k++){
 			std::shared_ptr<GameState> leaf = root->select(cfg.cpuct);
 			if (leaf->endGame()){
@@ -84,19 +85,11 @@ ArrayXf MCTS::do_parallel_simulate(std::shared_ptr<GameState> root, NNWrapper& m
 			break;
 		}
 
-		std::vector<NN::Output> res; 
 		
-		if (cfg.globalBatching){
-			std::promise<std::vector<NN::Output>> res_prom;
-    		std::future<std::vector<NN::Output>> res_future = res_prom.get_future();
-			model.maybeEvaluate(leafs, res_prom);
-			res =  res_future.get();
-		} else {
-			res = model.maybeEvaluate(leafs);
-		}
-		
+		std::future<std::vector<NN::Output>> res_future = model.maybeEvaluate(leafs, cfg.globalBatchSize);
+		std::vector<NN::Output> res = res_future.get(); 		
 
-		#pragma omp parallel for
+		#pragma omp parallel for num_threads(cfg.n_threads)
 		for(unsigned int i = 0; i < leafs.size(); i++){
 			leafs[i]->removeVirtualLoss(cfg.vloss);
 			leafs[i]->expand(res[i].policy, cfg.dirichlet_alpha);
