@@ -110,7 +110,7 @@ void play_game(
 	){
 
 	std::shared_ptr<Game> game = n_game->copy();
-    std::shared_ptr<GameState> gs =  std::make_shared<GameState>(game);
+    auto gs =  std::make_shared<GameState>(game);
     Selfplay::Result gameResult;
 
 	int action;
@@ -156,12 +156,13 @@ int main(int argc, char** argv){
 	Selfplay::Config cfg = parseCommandLine(argc, argv); 
 
 	std::shared_ptr<Game> g = Game::create(cfg.game_name);
-	NNWrapper model = NNWrapper(cfg.model_loc);
-	
+	GlobalBatch buffer = GlobalBatch(cfg.threads, cfg.mcts.globalBatchSize); 
+	NNWrapper model = NNWrapper(cfg.model_loc, buffer);
+
 	std::vector<std::thread> pool;
 	std::cout<< "n_threads:" << cfg.threads << std::endl;
 	for(unsigned int i = 0; i < cfg.threads; i++){
-		pool.push_back(std::thread([&cfg, &g, &model]{
+		pool.push_back(std::thread([&cfg, &g, &model, &buffer]{
 			for(unsigned int j = 0; j < cfg.n_games/cfg.threads; j++){
 				play_game(g, model, cfg);
 
@@ -171,6 +172,8 @@ int main(int argc, char** argv){
 
 				//model.shouldLoad(cfg.model_loc);
 			}
+			buffer.maxAdds--;
+			model.flushBuffer();
 		}));		
 	}
 

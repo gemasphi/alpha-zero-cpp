@@ -3,14 +3,14 @@
 using namespace Eigen;
 
 
-NNWrapper::NNWrapper(std::string filename) : device(torch::kCPU){
+NNWrapper::NNWrapper(std::string filename, GlobalBatch& buffer) : buffer(buffer), device(torch::kCPU){
 	if (torch::cuda::is_available()) {
   		std::cout << "CUDA is available! Training on GPU." << std::endl;
   		this->device = torch::kCUDA;
 	}
 
 	//this->observer = 
-	//	 std::make_unique<NNObserver>(*this, filename, watchFile);;  
+	//	 std::make_unique<NNObserver>(*this, filename, watchFile);;
 	this->load(filename);
 }
 	
@@ -110,31 +110,41 @@ std::vector<NN::Output> NNWrapper::predict(NN::Input input){
 	return o;
 }
 
+
+
 std::future<std::vector<NN::Output>> NNWrapper::maybeEvaluate(std::vector<std::shared_ptr<GameState>> leafs,  
 								int globalBatchSize){
 	
-	std::promise<std::vector<NN::Output>> res_prom;
-    std::future<std::vector<NN::Output>> res_future = res_prom.get_future();
+	auto res_prom = 
+		std::make_shared<std::promise<std::vector<NN::Output>>>();
 
+	auto res_future = res_prom->get_future();
 
     if (globalBatchSize > -1){
 		#pragma omp critical(batch)
 		{
-			this->buffer.insertBatch(leafs, std::move(res_prom));	
+			this->buffer.insertBatch(leafs, res_prom);	
     	}
 
 		#pragma omp critical(batch)
 		{
-			if (this->buffer.isFull(globalBatchSize)){
-				std::vector<NN::Output> res = this->predict(this->prepareInput(this->buffer.batch));
-				this->buffer.returnValuesBySection(res, leafs.size());
+			if (this->buffer.isFull()){
+				this->flushBuffer();
 			}
 		}
+
     }
     else{
 		std::vector<NN::Output> res = this->predict(this->prepareInput(leafs));
-		res_prom.set_value(res);
+		res_prom->set_value(res);
     }
 
     return res_future;	
+}
+
+void NNWrapper::flushBuffer(){
+	if (this->buffer.batch.size() != 0){
+		std::vector<NN::Output> res = this->predict(this->prepareInput(this->buffer.batch));
+		this->buffer.returnValuesBySection(res);
+	}
 }

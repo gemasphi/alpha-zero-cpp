@@ -198,7 +198,7 @@ ArrayXf GameState::dirichlet_distribution(float alpha, int size){
 	static std::random_device rd;
 	static std::mt19937 gen(rd());
 
-	for(int i; i < size; i++){
+	for(int i = 0; i < size; i++){
 		std::gamma_distribution<double> dist(alpha, 1);
 		auto sample = dist(gen); 
 		res(i) = sample;

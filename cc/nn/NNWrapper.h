@@ -22,25 +22,40 @@ namespace fs = std::experimental::filesystem;
 
 struct GlobalBatch
 {
+	struct Section{
+		unsigned int first;
+		unsigned int last;
+		std::shared_ptr<std::promise<std::vector<NN::Output>>> promise; 
+
+		Section(unsigned int first, unsigned int last, std::shared_ptr<std::promise<std::vector<NN::Output>>> promise):
+				first(first), last(last), promise(promise){}
+
+	};
+
 	std::vector<std::shared_ptr<GameState>> batch; 
-	std::unordered_map<unsigned int, std::promise<std::vector<NN::Output>>> sections;
+	std::vector<Section> sections;
+	int maxAdds;
+	int size;
 
-	void insertBatch(std::vector<std::shared_ptr<GameState>> leafs, std::promise<std::vector<NN::Output>> res_prom){
-		this->sections.insert({this->batch.size(), std::move(res_prom)});
+	GlobalBatch(int maxAdds, int size) : maxAdds(maxAdds), size(size){}
+
+	void insertBatch(std::vector<std::shared_ptr<GameState>> leafs, std::shared_ptr<std::promise<std::vector<NN::Output>>> res_prom){
+		Section sec(this->batch.size(), this->batch.size() + leafs.size(), res_prom); 
+
+		this->sections.push_back(sec);
 		this->batch.insert(this->batch.end(), leafs.begin(), leafs.end());
-		
 	}
 
-	bool isFull(int size){
-		return this->batch.size() >= size;
+	bool isFull(){
+		return this->batch.size() >= size || this->sections.size() == maxAdds;
 	}
 
-	void returnValuesBySection(std::vector<NN::Output>& res, unsigned int size){	
-		for (auto& prom: this->sections) {
-			std::vector<NN::Output>::const_iterator first = res.begin() + prom.first;
-			std::vector<NN::Output>::const_iterator last = res.begin() + prom.first + size;
+	void returnValuesBySection(std::vector<NN::Output>& res){	
+		for(auto& sec : this->sections ){
+			auto first = res.begin() + sec.first;
+			auto last = res.begin() + sec.last;
 			std::vector<NN::Output> res_slice(first, last);
-			prom.second.set_value(res_slice);
+			sec.promise->set_value(res_slice);
 		}
 
 		this->sections.clear();
@@ -50,7 +65,7 @@ struct GlobalBatch
 
 class NNWrapper{
 	private:
-		GlobalBatch buffer; 
+		GlobalBatch& buffer; 
 
 		torch::jit::script::Module module;
 		torch::Device device;
@@ -68,13 +83,15 @@ class NNWrapper{
 		void load(std::string filename);
 
 	public:
-		NNWrapper(std::string filename);
+		NNWrapper(std::string filename, GlobalBatch& buffer);
 		NN::Input prepareInput(std::vector<std::shared_ptr<GameState>> leafs);
 
 		NN::Output maybeEvaluate(std::shared_ptr<GameState> leaf);
 		std::future<std::vector<NN::Output>> maybeEvaluate(std::vector<std::shared_ptr<GameState>> leafs, int globalBatching);
 		std::vector<NN::Output> predict(NN::Input input);
 
+		void flushBuffer();
+		
 		//std::shared_mutex* getModelMutex();
 		void shouldLoad(std::string filename);
 		std::string getFilename();
