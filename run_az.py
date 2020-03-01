@@ -28,7 +28,7 @@ def build_network(game, folder, nn_params):
 		board_dim = game_info["board_size"], 
 		output_planes = game_info["output_planes"], 
 		action_size = game_info["action_size"], 
-		res_layer_number = 5
+		res_layer_number = 12
 		)
 
 	net.save_traced_model(folder = folder, model_name = '-1_traced_model_new.pt')
@@ -40,12 +40,12 @@ def build_network(game, folder, nn_params):
 if __name__ == "__main__":
 	GAME = "CONNECTFOUR"
 	N_GENS = 100
-	N_SELFPLAY_GAMES = 200
+	N_SELFPLAY_GAMES = 100000000
 	N_PLAYAGAISNT_GAMES = 100
 
 	N_ITERS = -1
 	SAVE_MODELS = "temp/models/"
-	LOSS_LOG = 20
+	LOSS_LOG = 5
 
 	NN_PARAMS = {
 		"batch_size": 1024,
@@ -56,8 +56,8 @@ if __name__ == "__main__":
 	}
 
 	DATA = {
-		"location": "build/temp/perfect_player/",
-		"n_games": 1
+		"location": "temp/games/",
+		"n_games": 0.5
 	}
 
 
@@ -66,13 +66,21 @@ if __name__ == "__main__":
 	#model_loc = "temp/models/traced_model_new.pt"
 	#NN_PARAMS['input_planes'] = 1
 
-	for i in range(N_GENS):
-	#	print("Generation {}".format(i))
-	#	print("Starting Selfplay")
-	
+	for i in range(1, N_GENS):
+		print("Starting Selfplay")
+		subprocess.Popen(['build/selfplay', 
+						'--game={}'.format(GAME), 
+						'--model={}'.format(model_loc),
+						'--n_games={}'.format(N_SELFPLAY_GAMES),
+						'--cpuct={}'.format(2.5),
+						'--n_simulations={}'.format(800),
+						'--mcts_threads={}'.format(1),
+						'--selfplay_threads={}'.format(31),
+						'--global_batch_size={}'.format(31),
+						'--batch_size={}'.format(1),
+						], stdout = selfplay_log)
+		
 		print("Started Training")
-
-		start_time = time.time()
 		subprocess.Popen(['python3','train.py', 
 						'--model={}'.format(model_loc),
 						'--folder={}'.format(SAVE_MODELS),
@@ -81,8 +89,9 @@ if __name__ == "__main__":
 						'--loss_log={}'.format(LOSS_LOG),
 						'--nn_params={}'.format(json.dumps(NN_PARAMS)),
 						'--data={}'.format(json.dumps(DATA)),
-						]).wait()
-		print("{} iters trained: {}".format(N_ITERS, time.time() - start_time))
+						], stdout= train_log).wait()
+		#print("{} iters trained: {}".format(N_ITERS, time.time() - start_time))
+		
 		
 		"""
 		print("Started Play Agaisnt Match")

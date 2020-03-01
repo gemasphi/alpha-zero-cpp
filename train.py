@@ -1,5 +1,5 @@
 import yaml
-from py.GameSampler import Sampler, WholeDatasetSupervised, SurpervisedSampler
+from py.GameSampler import Sampler, WholeDatasetSupervised, SurpervisedSampler, WholeDataset
 from py.NN import NetWrapper, Stats
 import json 
 import os
@@ -30,7 +30,7 @@ def train_az(
 		scheduler_params = nn_params['scheduler_params']
 	)
 
-	sampler = WholeDatasetSupervised(
+	sampler = Sampler(
 				data['location'], 
 				data['n_games'], 
 				nn_params['input_planes'],
@@ -40,28 +40,28 @@ def train_az(
 	full_stats = []
 	stats = Stats()
 	complete_stats = Stats()
-	for fds in range(100):
-		print("Epoch {}".format(fds))
-		for i, batch in sampler.sample_batch(): 
-			stats += nn.train(batch)
-			
-			if i != 0 and i % loss_log == 0:
-				complete_stats += stats
-				stats.log(i, loss_log)
-				full_stats.append(stats)
-				stats = Stats()
 
-			if n_iter > 0 and i > n_iter:
-				break
-
-		if not os.path.isdir('temp/losses/'):
-			os.mkdir('temp/losses/')
+	for i, batch in sampler.sample_batch(): 
+		stats += nn.train(batch)
 		
-		df = pd.DataFrame([asdict(s) for s in full_stats])
-		df.to_csv("temp/losses/{}_losses.csv".format(n_gen),index=False) 
-				
-		nn.save_traced_model(folder = folder, model_name = "traced_model_new.pt")
-		nn.save_traced_model(folder = folder, model_name = "{}_traced_model_new.pt".format(n_gen))
+		if i != 0 and i % loss_log == 0:
+			complete_stats += stats
+			stats.log(i, loss_log)
+			full_stats.append(stats)
+			stats = Stats()
+
+		if n_iter > 0 and i > n_iter:
+			break
+
+		if i != 0 and i % 500 == 0:
+			if not os.path.isdir('temp/losses/'):
+				os.mkdir('temp/losses/')
+			
+			df = pd.DataFrame([asdict(s) for s in full_stats])
+			df.to_csv("temp/losses/{}_losses.csv".format(n_gen),index=False) 
+					
+			nn.save_traced_model(folder = folder, model_name = "traced_model_new.pt")
+			nn.save_traced_model(folder = folder, model_name = "{}_traced_model_new.pt".format(i))
 
 	return complete_stats.loss
 

@@ -65,7 +65,7 @@ struct GlobalBatch
 
 class NNWrapper{
 	private:
-		GlobalBatch& buffer; 
+		std::unique_ptr<GlobalBatch> buffer; 
 
 		torch::jit::script::Module module;
 		torch::Device device;
@@ -83,7 +83,8 @@ class NNWrapper{
 		void load(std::string filename);
 
 	public:
-		NNWrapper(std::string filename, GlobalBatch& buffer);
+		NNWrapper(std::string filename);
+		NNWrapper(std::string filename, std::unique_ptr<GlobalBatch> buffer);
 		NN::Input prepareInput(std::vector<std::shared_ptr<GameState>> leafs);
 
 		NN::Output maybeEvaluate(std::shared_ptr<GameState> leaf);
@@ -95,6 +96,8 @@ class NNWrapper{
 		//std::shared_mutex* getModelMutex();
 		void shouldLoad(std::string filename);
 		std::string getFilename();
+
+		void decreaseBufferSize();
 
 		
 };

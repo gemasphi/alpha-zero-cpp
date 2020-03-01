@@ -48,7 +48,7 @@ class NetWrapper(object):
         super(NetWrapper, self).__init__()
 
     def build(self, input_planes, board_dim, action_size, output_planes, res_layer_number):
-        self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        self.device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
         self.nn = AlphaZeroNet(input_planes = input_planes, 
                               board_dim = board_dim, 
                               action_size = action_size, 
@@ -123,7 +123,7 @@ class NetWrapper(object):
 
     def load_model(self, path = "temp/models/model_new.pt", load_optim = False):
         cp = torch.load(path)
-        self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        self.device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
         self.nn.load_state_dict(cp['model_state_dict'])
         if load_optim:   
             self.optimizer = optim.Adam(self.nn.parameters(), lr = 0.1, weight_decay = 0.005)
@@ -134,7 +134,7 @@ class NetWrapper(object):
         return self.nn
     
     def load_traced_model(self, path = "models/traced_model_new.pt"):
-        self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        self.device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
         self.nn = torch.jit.load(path)
         self.nn.to(self.device)
 

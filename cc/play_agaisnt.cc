@@ -292,8 +292,8 @@ int main(int argc, char** argv){
 	NNWrapper nn2 =  NNWrapper(cfg.model_loc2);
 	 
 
-	std::shared_ptr<AlphaZeroPlayer> p1 = std::make_shared<AlphaZeroPlayer>(nn1, cfg.mcts, 3);
-	std::shared_ptr<AlphaZeroPlayer> p2 = std::make_shared<AlphaZeroPlayer>(nn2, cfg.mcts, 3);
+	std::shared_ptr<AlphaZeroPlayer> p1 = std::make_shared<AlphaZeroPlayer>(nn1, cfg.mcts, 2);
+	std::shared_ptr<AlphaZeroPlayer> p2 = std::make_shared<AlphaZeroPlayer>(nn2, cfg.mcts, 2);
 //	std::shared_ptr<MCTSPlayer> p2 = std::make_shared<MCTSPlayer>(cfg.mcts, -1);
 	//std::shared_ptr<AlphaZeroPlayer> p2 = std::make_shared<AlphaZeroPlayer>(nn2, cfg.mcts, 2);
 	//std::shared_ptr<AlphaZeroPlayer> p2 = std::make_shared<AlphaZeroPlayer>(nn1, cfg.mcts, 0);
@@ -314,8 +314,7 @@ int main(int argc, char** argv){
 	cfg.id = "vs";
 	player_vs_player(cfg, match);
 
-	/*
-	perfectPlayer = std::make_shared<ConnectSolver>(""); 
+	perfectPlayer = std::make_shared<ConnectSolver>("/_deps/connect4solver-src/7x6.book"); 
 	std::shared_ptr<RandomPlayer> randomPlayer = std::make_shared<RandomPlayer>();
 	
 	Match::Info pmatch = Match::Info(
@@ -326,6 +325,6 @@ int main(int argc, char** argv){
 
 	cfg.id = "agreement";
 	player_vs_player(cfg, pmatch);
-	*/
+
 	return 0;
 }

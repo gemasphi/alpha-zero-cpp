@@ -85,8 +85,11 @@ void save_game(std::shared_ptr<Game> game, Selfplay::Result res){
 	if (!fs::exists(directory)){
 		fs::create_directories(directory);
 	}
-    
-	std::ofstream o(directory + std::to_string(omp_get_thread_num()) +  "_" + std::to_string(t));
+
+	static std::random_device dev;
+    static std::mt19937 rng(dev());
+    std::uniform_int_distribution<std::mt19937::result_type> dist6(1,6); 
+	std::ofstream o(directory + std::to_string(dist6(rng)) +  "_" + std::to_string(t));
 	json jgame;
 	jgame["probabilities"] = res.probabilities;
 	jgame["winner"] = game->getWinner();
@@ -156,13 +159,12 @@ int main(int argc, char** argv){
 	Selfplay::Config cfg = parseCommandLine(argc, argv); 
 
 	std::shared_ptr<Game> g = Game::create(cfg.game_name);
-	GlobalBatch buffer = GlobalBatch(cfg.threads, cfg.mcts.globalBatchSize); 
-	NNWrapper model = NNWrapper(cfg.model_loc, buffer);
+	NNWrapper model = NNWrapper(cfg.model_loc, std::make_unique<GlobalBatch>(cfg.threads, cfg.mcts.globalBatchSize));
 
 	std::vector<std::thread> pool;
 	std::cout<< "n_threads:" << cfg.threads << std::endl;
 	for(unsigned int i = 0; i < cfg.threads; i++){
-		pool.push_back(std::thread([&cfg, &g, &model, &buffer]{
+		pool.push_back(std::thread([&cfg, &g, &model]{
 			for(unsigned int j = 0; j < cfg.n_games/cfg.threads; j++){
 				play_game(g, model, cfg);
 
@@ -170,10 +172,13 @@ int main(int argc, char** argv){
 				std::time_t now_time = std::chrono::system_clock::to_time_t(now);
 				std::cout<< std::ctime(&now_time) <<" Game Generated" << std::endl;
 
-				//model.shouldLoad(cfg.model_loc);
+				model.shouldLoad(cfg.model_loc);
 			}
-			buffer.maxAdds--;
-			model.flushBuffer();
+			#pragma omp critical(batch)
+			{
+				model.decreaseBufferSize();
+				model.flushBuffer();
+			}
 		}));		
 	}
 
