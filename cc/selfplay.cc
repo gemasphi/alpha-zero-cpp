@@ -77,25 +77,25 @@ namespace Selfplay{
 	};
 }
 
-
 void save_game(std::shared_ptr<Game> game, Selfplay::Result res){
 	std::string directory = "./temp/games/";
-	std::time_t t = std::time(0); 
+	static std::random_device dev;
+    static std::mt19937 rng(dev());
 
 	if (!fs::exists(directory)){
 		fs::create_directories(directory);
 	}
 
-	static std::random_device dev;
-    static std::mt19937 rng(dev());
-    std::uniform_int_distribution<std::mt19937::result_type> dist6(1,6); 
-	std::ofstream o(directory + std::to_string(dist6(rng)) +  "_" + std::to_string(t));
+
 	json jgame;
 	jgame["probabilities"] = res.probabilities;
 	jgame["winner"] = game->getWinner();
 	jgame["history"] = res.history;
 
-	o << jgame.dump() << std::endl;
+    std::uniform_int_distribution<std::mt19937::result_type> dist6(1,6); 
+	std::ofstream o(directory + std::to_string(dist6(rng)) +  "_" + std::to_string(std::time(0)));
+	
+	o << jgame.dump();
 }
 
 int pickAction(ArrayXf p){
@@ -170,7 +170,7 @@ int main(int argc, char** argv){
 
 				auto now = std::chrono::system_clock::now();
 				std::time_t now_time = std::chrono::system_clock::to_time_t(now);
-				std::cout<< std::ctime(&now_time) <<" Game Generated" << std::endl;
+				std::cout<< std::ctime(&now_time) <<" Game Generated\n";
 
 				model.shouldLoad(cfg.model_loc);
 			}

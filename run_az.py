@@ -49,23 +49,22 @@ if __name__ == "__main__":
 
 	NN_PARAMS = {
 		"batch_size": 1024,
-		"lr" : 0.005,
-		"wd" : 0.001,
+		"lr" : 0.001,
+		"wd" : 0.0005,
 		"momentum" : 0.9,
 		"scheduler_params" : {}
 	}
 
 	DATA = {
 		"location": "temp/games/",
-		"n_games": 0.5
+		"n_games": 1500
 	}
-
-
+        
 	train_log, selfplay_log, play_agaisnt_log = setup_logs()
-	model_loc = build_network(GAME, SAVE_MODELS, NN_PARAMS)
-	#model_loc = "temp/models/traced_model_new.pt"
-	#NN_PARAMS['input_planes'] = 1
-
+	#model_loc = build_network(GAME, SAVE_MODELS, NN_PARAMS)
+	model_loc = "temp/models/traced_model_new.pt"
+	NN_PARAMS['input_planes'] = 1
+	
 	for i in range(1, N_GENS):
 		print("Starting Selfplay")
 		subprocess.Popen(['build/selfplay', 

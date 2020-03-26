@@ -57,8 +57,13 @@ class HumanPlayer : public Player
 };
 
 class RandomPlayer : public Player
-{
+{	
+	int seed;
+	std::random_device rd;
+	std::mt19937 gen;  
 	public:
+		RandomPlayer();
+		RandomPlayer(int seed);
 		int getAction(std::shared_ptr<Game> game);
 		std::string name();
 };

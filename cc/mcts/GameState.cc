@@ -37,6 +37,7 @@ std::ostream& operator<<(std::ostream& os, const GameState& gs)
     	<< "Child P\n" << gs.childP.format(CleanFmt)  << std::endl
     	<< "Child W\n" << gs.childW.format(CleanFmt)  << std::endl
     	<< "Action: " << gs.action << std::endl
+    	<< "Best Action:" << gs.best_action << std::endl
     	<< "Value: " << gs.value << std::endl
     	<< "Rollout: " << gs.rollout_v << std::endl
     	<< "Next Player: " << gs.game->getPlayer() << std::endl
@@ -79,7 +80,7 @@ float GameState::rollout(){
     static std::mt19937 gen(rd());
 	
 	float total_rollout = 0;
-	int n_rollouts = 50;
+	int n_rollouts = 100;
 
 	#pragma omp parallel for
 	for (int i = 0; i < n_rollouts; i++){
@@ -105,9 +106,8 @@ void GameState::backup(float v, int n /*= 1*/){
 	while (current->parent){
 		omp_set_lock(&(this->writelock));
 		current->updateN(n);
-		current->updateW(v);
+		current->updateW(v*current->parent->game->getPlayer());
 		current = current->parent;
-		v *= -1;
 		omp_unset_lock(&(this->writelock));
 	}
 }
@@ -117,11 +117,12 @@ void GameState::addVirtualLoss(int vloss){
 	this->isExpanded = true;
 	omp_unset_lock(&(this->writelock));
 
-	this->backup(-vloss, 1);
+	//we want the parent to NOT choose this node, so we make it be a loss in the prespective of the parent
+	this->backup(vloss*this->parent->game->getPlayer()*-1, 1); 
 }
 
 void GameState::removeVirtualLoss(int vloss){
-	this->backup(vloss, -1);
+	this->backup(vloss*this->parent->game->getPlayer(), -1);
 }
 
 int GameState::getBestAction(float cpuct){
@@ -141,7 +142,7 @@ int GameState::getBestAction(float cpuct){
 			}	
 		}				
 	}
-	
+	this->best_action = action;
 	if (action == -1){
 		std::cout<< "puct\n" <<  puct <<std::endl;
 		std::cout<< "poss\n" <<  poss <<std::endl;
@@ -246,12 +247,12 @@ std::vector<MatrixXf> GameState::getNetworkInput(){
 	std::vector<MatrixXf> game_state ;
 	auto dims = this->game->getBoardSize();
 	std::shared_ptr<GameState> current = shared_from_this();
-	game_state.insert(game_state.begin(), current->game->getBoard()*this->game->getPlayer());
+	game_state.insert(game_state.begin(), current->game->getBoard());
 
 	for(int i = 0; i < this->game->getInputPlanes() - 1; i++){
 		if (current->parent){
 			current =  current->parent;
-			game_state.insert(game_state.begin(), current->game->getBoard()*this->game->getPlayer());
+			game_state.insert(game_state.begin(), current->game->getBoard());
 		}
 		else{
 			game_state.insert(game_state.begin(), MatrixXf::Zero(dims[0], dims[1]));

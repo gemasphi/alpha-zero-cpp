@@ -34,7 +34,7 @@ class GameState : public std::enable_shared_from_this<GameState>
 		ArrayXf dirichlet_distribution(float alpha, int size);
 		float value = -2;
 		float rollout_v = -2;
-		
+		int best_action;
 	public:
 		std::shared_ptr<GameState> parent;
 		std::shared_ptr<Game> game;

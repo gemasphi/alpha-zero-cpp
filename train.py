@@ -41,9 +41,9 @@ def train_az(
 	stats = Stats()
 	complete_stats = Stats()
 
-	for i, batch in sampler.sample_batch(): 
+	for i, batch in sampler.sample_batch():
+		i = i + 9251 
 		stats += nn.train(batch)
-		
 		if i != 0 and i % loss_log == 0:
 			complete_stats += stats
 			stats.log(i, loss_log)
@@ -53,7 +53,7 @@ def train_az(
 		if n_iter > 0 and i > n_iter:
 			break
 
-		if i != 0 and i % 500 == 0:
+		if i != 0 and i % 250 == 0:
 			if not os.path.isdir('temp/losses/'):
 				os.mkdir('temp/losses/')
 			

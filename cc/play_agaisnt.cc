@@ -89,7 +89,7 @@ namespace Match{
 	    	this->history.push_back(b_v);
 		}
 
-		void addAgreement(std::vector<int> best_actions, int action, bool p1){
+		void addAgreement(std::vector<float> best_actions, int action, bool p1){
 			bool agree = std::find(best_actions.begin(), best_actions.end(), action) != best_actions.end();
 			p1  ? this->agreement1.push_back(agree) 
 				: this->agreement2.push_back(agree);
@@ -230,11 +230,11 @@ Match::Result play_game(Match::Info m, bool print = false){
 							  : p2.getAction(game);  
 
 
-		/*if (perfectPlayer) result.addAgreement(
-							perfectPlayer->getBestActions(game), 
+		if (perfectPlayer) result.addAgreement(
+							perfectPlayer->getBestScores(game), 
 							action, 
 							!(m.aligned) == !(i % 2 == 0));
-		*/
+
 		game->play(action);
 		result.addBoard(game->getBoard());
 
@@ -292,16 +292,17 @@ int main(int argc, char** argv){
 	NNWrapper nn2 =  NNWrapper(cfg.model_loc2);
 	 
 
-	std::shared_ptr<AlphaZeroPlayer> p1 = std::make_shared<AlphaZeroPlayer>(nn1, cfg.mcts, 2);
-	std::shared_ptr<AlphaZeroPlayer> p2 = std::make_shared<AlphaZeroPlayer>(nn2, cfg.mcts, 2);
-//	std::shared_ptr<MCTSPlayer> p2 = std::make_shared<MCTSPlayer>(cfg.mcts, -1);
-	//std::shared_ptr<AlphaZeroPlayer> p2 = std::make_shared<AlphaZeroPlayer>(nn2, cfg.mcts, 2);
-	//std::shared_ptr<AlphaZeroPlayer> p2 = std::make_shared<AlphaZeroPlayer>(nn1, cfg.mcts, 0);
-	//std::shared_ptr<NNPlayer> p1 = std::make_shared<NNPlayer>(nn1, 0);
-	//std::shared_ptr<AlphaZeroPlayer> p1 = std::make_shared<AlphaZeroPlayer>(nn1, cfg.mcts, -1);
-	//std::shared_ptr<AlphaZeroPlayer> p2 = std::make_shared<AlphaZeroPlayer>(nn2, cfg.mcts, 0);
-	//std::shared_ptr<RandomPlayer> p2 = std::make_shared<RandomPlayer>();
-	//std::shared_ptr<HumanPlayer> p2 = std::make_shared<HumanPlayer>();
+	auto p1 = std::make_shared<AlphaZeroPlayer>(nn1, cfg.mcts, 1);
+	auto p2 = std::make_shared<AlphaZeroPlayer>(nn2, cfg.mcts, 1);
+	//auto p1 = std::make_shared<MCTSPlayer>(cfg.mcts, -1);
+	//auto p2 = std::make_shared<HumanPlayer>();
+	//auto p2 = std::make_shared<AlphaZeroPlayer>(nn2, cfg.mcts, 2);
+	//auto p2 = std::make_shared<AlphaZeroPlayer>(nn1, cfg.mcts, 0);
+	//auto p2 = std::make_shared<NNPlayer>(nn1, 0);
+	//auto p1 = std::make_shared<AlphaZeroPlayer>(nn1, cfg.mcts, -1);
+	//auto p2 = std::make_shared<AlphaZeroPlayer>(nn2, cfg.mcts, 0);
+	//auto p2 = std::make_shared<RandomPlayer>();
+	//auto p2 = std::make_shared<ConnectSolver>("_deps/connect4solver-src/7x6.book"); 
 	
 	std::shared_ptr<PerfectPlayer> perfectPlayer;
 
@@ -314,8 +315,8 @@ int main(int argc, char** argv){
 	cfg.id = "vs";
 	player_vs_player(cfg, match);
 
-	perfectPlayer = std::make_shared<ConnectSolver>("/_deps/connect4solver-src/7x6.book"); 
-	std::shared_ptr<RandomPlayer> randomPlayer = std::make_shared<RandomPlayer>();
+	perfectPlayer = std::make_shared<ConnectSolver>("_deps/connect4solver-src/7x6.book"); 
+	std::shared_ptr<RandomPlayer> randomPlayer = std::make_shared<RandomPlayer>(5);
 	
 	Match::Info pmatch = Match::Info(
 		*game,
@@ -325,6 +326,5 @@ int main(int argc, char** argv){
 
 	cfg.id = "agreement";
 	player_vs_player(cfg, pmatch);
-
 	return 0;
 }

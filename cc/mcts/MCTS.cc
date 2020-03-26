@@ -16,6 +16,7 @@ ArrayXf MCTS::simulate(std::shared_ptr<GameState> root, NNWrapper& model, MCTS::
 ArrayXf MCTS::simulate_random(std::shared_ptr<Game> game, MCTS::Config cfg){
 	return simulate_random(std::make_shared<GameState>(game),cfg);
 }
+
 ArrayXf MCTS::simulate_random(std::shared_ptr<GameState> root, MCTS::Config cfg){
 	std::shared_ptr<GameState> leaf; 
 
@@ -23,17 +24,17 @@ ArrayXf MCTS::simulate_random(std::shared_ptr<GameState> root, MCTS::Config cfg)
 		leaf = root->select(cfg.cpuct);
 
 		if (leaf->endGame()){
-			leaf->backup(leaf->getWinner()*leaf->parent->getPlayer());
+			leaf->backup(leaf->getWinner());
 			continue;
 		}
 
-		int value = leaf->rollout();
+		float value = leaf->rollout();
 		leaf->expand(ArrayXf::Ones(root->game->getActionSize())/root->game->getActionSize(), cfg.dirichlet_alpha);
-		leaf->backup(value*leaf->parent->getPlayer());
+		leaf->backup(value);
 
 	}
 
-//	tree_to_dot(root);
+	//tree_to_dot(root);
 	return root->getSearchPolicy(cfg.temp);
 }
 
@@ -45,7 +46,7 @@ ArrayXf MCTS::do_simulate(std::shared_ptr<GameState> root, NNWrapper& model, MCT
 		leaf = root->select(cfg.cpuct);
 
 		if (leaf->endGame()){
-			leaf->backup(leaf->getWinner()*leaf->parent->getPlayer());
+			leaf->backup(leaf->getWinner());
 			continue;
 		}
 
@@ -55,6 +56,7 @@ ArrayXf MCTS::do_simulate(std::shared_ptr<GameState> root, NNWrapper& model, MCT
 		leaf->backup(res.value);
 
 	}
+	tree_to_dot(root);
 
 	return root->getSearchPolicy(cfg.temp);
 }
@@ -71,7 +73,7 @@ ArrayXf MCTS::do_parallel_simulate(std::shared_ptr<GameState> root, NNWrapper& m
 		for(int k = 0; k < cfg.batchSize; k++){
 			std::shared_ptr<GameState> leaf = root->select(cfg.cpuct);
 			if (leaf->endGame()){
-				leaf->backup(leaf->getWinner()*leaf->parent->getPlayer());
+				leaf->backup(leaf->getWinner());
 			}
 			else{
 				leaf->addVirtualLoss(cfg.vloss);
@@ -97,9 +99,9 @@ ArrayXf MCTS::do_parallel_simulate(std::shared_ptr<GameState> root, NNWrapper& m
 		}
 
 	}
+	//tree_to_dot(root);
 
 	//std::cout <<"simulation" <<std::endl;
-
 	return root->getSearchPolicy(cfg.temp);
 }
 	

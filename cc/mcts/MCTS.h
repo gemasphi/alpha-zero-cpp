@@ -28,8 +28,8 @@ namespace MCTS
 		//for parallel simulate
 		static inline bool parallel = true;
 		static inline int globalBatchSize = -1;
-		static inline int batchSize = 4;
-		static inline int n_threads = 4;
+		static inline int batchSize = 1;
+		static inline int n_threads = 1;
 		static inline float vloss = 1;
 
 		Config(cxxopts::ParseResult result){

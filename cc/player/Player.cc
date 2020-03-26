@@ -133,7 +133,8 @@ MCTSPlayer::MCTSPlayer(MCTS::Config mcts, int deterministicAfter):
 								mcts(mcts){}
 
 ArrayXf MCTSPlayer::getProbabilities(std::shared_ptr<Game> game){
-	return MCTS::simulate_random(game, this->mcts); 
+	ArrayXf p = MCTS::simulate_random(game, this->mcts);
+	return p;
 }
 
 std::string MCTSPlayer::name(){
@@ -143,13 +144,16 @@ std::string MCTSPlayer::name(){
 NNPlayer::NNPlayer(NNWrapper& nn, int deterministicAfter) : ProbabilisticPlayer(deterministicAfter), nn(nn) {}
 
 ArrayXf NNPlayer::getProbabilities(std::shared_ptr<Game> game){
-	NN::Input i = NN::Input({game->getBoard()*game->getPlayer()});
+	NN::Input i = NN::Input({game->getBoard()});
+	
 	NN::Output res = this->nn.predict(i)[0];
 
 	ArrayXf poss = game->getPossibleActions();
 	ArrayXf valid_actions = poss*res.policy;
 	
-
+	std::cout << game->getBoard() << std::endl;;
+	std::cout << valid_actions << std::endl;;
+	std::cout << "value " <<res.value << std::endl;;
 	return valid_actions;
 }
 
@@ -158,16 +162,16 @@ std::string NNPlayer::name(){
 	return "NN Player: " + this->nn.getFilename();
 }
 
+RandomPlayer::RandomPlayer(): seed(-1){ this->gen =  std::mt19937(this->rd()); }
+RandomPlayer::RandomPlayer(int seed): seed(seed){  this->gen =  std::mt19937(this->seed); }
 
 int RandomPlayer::getAction(std::shared_ptr<Game> game){
-	std::random_device rd;
-    std::mt19937 gen(rd());
     //std::cout<< "random" << std::endl;
     ArrayXf poss = game->getPossibleActions();
     poss = poss/poss.sum();
     std::discrete_distribution<> dist(poss.data(),poss.data() +  poss.size());
 
-    return dist(gen);
+    return dist(this->gen);
 } 
 
 std::string RandomPlayer::name(){
