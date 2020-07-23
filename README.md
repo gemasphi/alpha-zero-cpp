@@ -8,13 +8,16 @@ Neural network architecture implementation and training is done in Python using 
 
 - [alpha-zero-cpp](#alpha-zero-cpp)
   - [Table of Contents](#table-of-contents)
-  - [Requirements](#requirements)
   - [Quick Start](#quick-start)
+    - [Requirements](#requirements)
+	- [Running](#running)
     - [Directory Structure](#directory-structure)
-  - [Experiments](#experiments)
 
 
-## Requirements
+## Quick Start
+
+### Requirements
+Atleast Python >3.7.0 and C++14 is needed.
 
 To install python requirements, run:
 
@@ -24,16 +27,29 @@ pip install -r requirements.txt
 
 C++ libraries are defined in the file cc/Dependencies.cmake which is used when you build using cmake.
 
-To build using cmake:
+To build using cmake, run the following:
 ```[bash]
 mkdir build && cd build && cmake --build .
 ```
 
 The first time running build will probabily be slow as several libraries are being downloaded and built. If you get an error, when installing libtorch the first time you build, run the command again.
 
+### Running
+To run you can simply, run the following script:  
+```[bash]
+python run_az.py
+```
 
-## Quick Start
+This script launches three processes: one for selfplay, one for training and one for testing.
+You can find all relevant parameters defined in that script and change you as you wish. 
+There are other paramaters defined inside the respective executables, but the default should be enough.
 
+You can also optimize for certain paramaters by running the script:
+```[bash]
+python optimize.py
+```
+
+However, you need a dataset for that, you can do that either by running the generated.cc executable or selfplay.cc executable.
 
 ### Directory Structure
 

@@ -35,12 +35,11 @@ def build_network(game, folder, nn_params):
 	model_loc = net.save_traced_model(folder = folder, model_name = 'traced_model_new.pt')
 	return model_loc
 
-#"{'lr': 0.010942571921826386, 'wd': 0.0012998839635123788, 'momentum': 0.002209938938990752}."
 
 if __name__ == "__main__":
 	GAME = "CONNECTFOUR"
 	N_GENS = 100
-	N_SELFPLAY_GAMES = 100000000
+	N_SELFPLAY_GAMES = 100
 	N_PLAYAGAISNT_GAMES = 100
 
 	N_ITERS = -1
@@ -61,8 +60,7 @@ if __name__ == "__main__":
 	}
         
 	train_log, selfplay_log, play_agaisnt_log = setup_logs()
-	#model_loc = build_network(GAME, SAVE_MODELS, NN_PARAMS)
-	model_loc = "temp/models/traced_model_new.pt"
+	model_loc = build_network(GAME, SAVE_MODELS, NN_PARAMS)
 	NN_PARAMS['input_planes'] = 1
 	
 	for i in range(1, N_GENS):
@@ -89,10 +87,8 @@ if __name__ == "__main__":
 						'--nn_params={}'.format(json.dumps(NN_PARAMS)),
 						'--data={}'.format(json.dumps(DATA)),
 						], stdout= train_log).wait()
-		#print("{} iters trained: {}".format(N_ITERS, time.time() - start_time))
 		
 		
-		"""
 		print("Started Play Agaisnt Match")
 		start_time = time.time()
 		subprocess.Popen(['build/play_agaisnt', 
@@ -105,4 +101,3 @@ if __name__ == "__main__":
 
 
 		print("{} games played: {}".format(N_PLAYAGAISNT_GAMES*2, time.time() - start_time))
-		"""
