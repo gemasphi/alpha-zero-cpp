@@ -6,6 +6,8 @@ import multiprocessing
 import time
 import torch
 import os
+from params import TrainParams,MCTSParams, to_args, instanciate_params_from_args
+import argparse
 
 def setup_logs(folder = 'temp'):
 	if not os.path.isdir(folder):
@@ -17,10 +19,9 @@ def setup_logs(folder = 'temp'):
 
 	return train_log, selfplay_log, play_agaisnt_log
 
-def build_network(game, folder, nn_params):
+def build_network(game, folder):
 	result = subprocess.run(['build/game_info', game], stdout= subprocess.PIPE)
 	game_info = json.loads(result.stdout.decode('utf-8'))
-	nn_params['input_planes'] = game_info['input_planes']
 
 	net = NetWrapper()
 	net.build(
@@ -33,71 +34,48 @@ def build_network(game, folder, nn_params):
 
 	net.save_traced_model(folder = folder, model_name = '-1_traced_model_new.pt')
 	model_loc = net.save_traced_model(folder = folder, model_name = 'traced_model_new.pt')
-	return model_loc
+	return model_loc, game_info['input_planes']
 
 
 if __name__ == "__main__":
-	GAME = "CONNECTFOUR"
-	N_GENS = 100
-	N_SELFPLAY_GAMES = 100
-	N_PLAYAGAISNT_GAMES = 100
+	parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter, allow_abbrev=False)
+	parser.add_argument('--game', help='Game')
+	parser.add_argument('--selfplay_games', type=int, help='Number of selfplay games by generation.')
+	parser.add_argument('--n_gen', type=int, help='Number of generations')
+	parser.add_argument('--testing_games', type=int, help='Number of games used to test by generation.')
 
-	N_ITERS = -1
-	SAVE_MODELS = "temp/models/"
-	LOSS_LOG = 5
+	TrainParams.add_to_parser(parser)
+	MCTSParams.add_to_parser(parser)
+	args = parser.parse_args()
+	train_params = instanciate_params_from_args(TrainParams, args)
+	mcts_params = instanciate_params_from_args(MCTSParams, args)
 
-	NN_PARAMS = {
-		"batch_size": 1024,
-		"lr" : 0.001,
-		"wd" : 0.0005,
-		"momentum" : 0.9,
-		"scheduler_params" : {}
-	}
-
-	DATA = {
-		"location": "temp/games/",
-		"n_games": 1500
-	}
-        
 	train_log, selfplay_log, play_agaisnt_log = setup_logs()
-	model_loc = build_network(GAME, SAVE_MODELS, NN_PARAMS)
-	NN_PARAMS['input_planes'] = 1
+	model_loc, input_planes = build_network(args.game, train_params.save_folder)
 	
-	for i in range(1, N_GENS):
+	for i in range(1, args.n_gen):
 		print("Starting Selfplay")
-		subprocess.Popen(['build/selfplay', 
-						'--game={}'.format(GAME), 
-						'--model={}'.format(model_loc),
-						'--n_games={}'.format(N_SELFPLAY_GAMES),
-						'--cpuct={}'.format(2.5),
-						'--n_simulations={}'.format(800),
-						'--mcts_threads={}'.format(1),
-						'--selfplay_threads={}'.format(31),
-						'--global_batch_size={}'.format(31),
-						'--batch_size={}'.format(1),
-						], stdout = selfplay_log)
+		selfplay = ['build/selfplay', '--game={}'.format(args.game), '--model={}'.format(model_loc), '--n_games={}'.format(args.selfplay_games)]
+		selfplay.extend(to_args(mcts_params))
+
+		subprocess.Popen(selfplay, stdout = selfplay_log)
 		
 		print("Started Training")
-		subprocess.Popen(['python3','train.py', 
-						'--model={}'.format(model_loc),
-						'--folder={}'.format(SAVE_MODELS),
-						'--n_iter={}'.format(N_ITERS),
-						'--n_gen={}'.format(i),
-						'--loss_log={}'.format(LOSS_LOG),
-						'--nn_params={}'.format(json.dumps(NN_PARAMS)),
-						'--data={}'.format(json.dumps(DATA)),
-						], stdout= train_log).wait()
+		train = ['python3','train.py', '--model_loc={}'.format(model_loc), "--current_gen={}".format(i), "--input_planes={}".format(input_planes)]
+		train.extend(to_args(train_params))
+								
+		subprocess.Popen(train, stdout= train_log).wait()
 		
 		
 		print("Started Play Agaisnt Match")
 		start_time = time.time()
 		subprocess.Popen(['build/play_agaisnt', 
 						'--id={}'.format(i),						
-						'--n_games={}'.format(N_PLAYAGAISNT_GAMES),						
-						'--game={}'.format(GAME),						
+						'--n_games={}'.format(args.testing_games),						
+						'--game={}'.format(args.game),						
 						'--model_one=temp/models/{}_traced_model_new.pt'.format(i),						
 						'--model_two=temp/models/{}_traced_model_new.pt'.format(i - 1),						
 						], stdout = play_agaisnt_log).wait()
 
 
-		print("{} games played: {}".format(N_PLAYAGAISNT_GAMES*2, time.time() - start_time))
+		print("{} games played: {}".format(args.testing_games*2, time.time() - start_time))
