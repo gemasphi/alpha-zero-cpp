@@ -1,8 +1,11 @@
 # alpha-zero-cpp
 Alpha Zero implementation that combines the speed of C++ and flexbility of Python. 
-Games, selfplay and Monte Carlo Tree Search (MCTS) is done in C++. 
+
+
+Games, Selfplay and Monte Carlo Tree Search (MCTS) is done in C++. 
 Neural network architecture implementation and training is done in Python using Pytorch.
 
+This is implementation is similar to [Polygames](https://github.com/facebookincubator/Polygames). 
 
 ## Table of Contents
 
@@ -44,7 +47,7 @@ This script launches three processes: one for selfplay, one for training and one
 You can find all relevant parameters defined in that script and change you as you wish. 
 There are other paramaters defined inside the respective executables, but the default should be enough.
 
-You can also optimize for certain paramaters by running the script:
+You can also optimize for certain parameters by running the script:
 ```[bash]
 python optimize.py
 ```
