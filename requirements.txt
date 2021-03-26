@@ -2,7 +2,7 @@
 
 # alpha-zero-cpp/optimize.py: 1
 # alpha-zero-cpp/train.py: 1
-PyYAML == 5.1
+PyYAML == 5.4
 
 # alpha-zero-cpp/build/catch-prefix/src/catch/conanfile.py: 2
 # alpha-zero-cpp/build/catch-prefix/src/catch/test_package/conanfile.py: 4,5
