@@ -27,7 +27,7 @@ matplotlib == 2.2.5
 # alpha-zero-cpp/py/utils/plot.py: 3
 # alpha-zero-cpp/train.py: 6
 # alpha-zero-cpp/utils.py: 1
-numpy == 1.16.6
+numpy == 1.22.0
 
 # alpha-zero-cpp/optimize.py: 2
 optuna == 1.5.0
