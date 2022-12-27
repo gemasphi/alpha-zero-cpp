@@ -72,7 +72,7 @@ scipy == 1.2.0
 seaborn == 0.9.1
 
 # alpha-zero-cpp/build/_deps/pybind11-src/setup.py: 5
-setuptools == 39.0.1
+setuptools == 65.5.1
 
 # alpha-zero-cpp/build/_deps/pybind11-src/docs/conf.py: 121
 sphinx-rtd-theme == 0.5.0
